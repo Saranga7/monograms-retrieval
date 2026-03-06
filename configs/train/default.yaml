@@ -1,0 +1,8 @@
+epochs: 50
+lr: 1e-4
+weight_decay: 1e-4
+
+optimizer: adamw
+
+log_interval: 10
+checkpoint_dir: checkpoints

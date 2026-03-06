@@ -1,0 +1,20 @@
+defaults:
+  - model: dino
+  - data: default
+  - train: default
+  - loss: clip
+  - test: default
+  - _self_
+
+hydra:
+  run:
+    dir: outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
+  job:
+    chdir: true
+
+device: cuda
+seed: 7
+mode: visualize
+wandb:
+  project_name: cross_modal_retrieval
+  name: ${model.name}_fold${data.fold}

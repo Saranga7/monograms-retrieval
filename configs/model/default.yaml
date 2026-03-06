@@ -1,0 +1,5 @@
+name: resnet18
+embed_dim: 256
+freeze_backbone: true
+projection_dim: 256
+proj_head_complexity: 2

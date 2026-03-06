@@ -1,0 +1,7 @@
+data_dir: /scratch/mahantas/datasets/MonogramSchema_Seal_pairs
+splits_dir: /scratch/mahantas/cross_modal_retrieval/splits
+batch_size: full
+num_workers: 8
+shuffle: true
+transform: true 
+fold: 3 

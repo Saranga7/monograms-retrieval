@@ -1,0 +1,35 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# editor
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# env files
+.env
+
+# Virtual environments
+.venv
+cmr/
+
+# output files (weights, indices, etc.)
+outputs/
+output_logs/
+multirun/
+precomputed_indices/
+wandb/
+wandb_result_summaries/
+
+# extras
+visualizations/
+
+# Jupyter
+.ipynb_checkpoints/
