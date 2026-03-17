@@ -1,0 +1,30 @@
+defaults:
+  - model: dino
+  - data: default
+  - train: default
+  - loss: clip
+  - _self_
+
+hydra:
+  run:
+    dir: outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
+  job:
+    chdir: true
+
+device: cuda
+seed: 7
+mode: train
+visualize_after_train: true
+wandb:
+  use_wandb_logging: true
+  project_name: cross_modal_retrieval_v2
+  name: ${model.name}_ClipLoss_repeat_fold${data.fold}
+
+
+# wandb:
+#   use_wandb_logging: true
+#   project_name: cross_modal_retrieval_v2
+#   name: null
+#   group: null
+#   job_type: train
+#   tags: []
