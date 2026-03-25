@@ -8,6 +8,7 @@ import logging
 from transformers import AutoModel
 from omegaconf import OmegaConf
 
+from src.utils import ResidualGatedAttention
 
 
 logger = logging.getLogger(__name__)
@@ -17,7 +18,7 @@ class ProjectionHead(nn.Module):
     def __init__(self, in_dim, cfg):
         super(ProjectionHead, self).__init__()
 
-        if cfg.model.proj_head_complexity == 0:
+        if cfg.model.proj_head_complexity == 0: 
             self.net = nn.Linear(in_dim, cfg.model.embed_dim)
 
         elif cfg.model.proj_head_complexity == 1:
@@ -33,16 +34,6 @@ class ProjectionHead(nn.Module):
                 nn.Linear(in_dim, 512),
                 nn.GELU(),
                 nn.Dropout(0.3),
-                nn.Linear(512, 512),
-                nn.GELU(),
-                nn.Dropout(0.1),
-                nn.Linear(512, cfg.model.embed_dim)
-            )
-        elif cfg.model.proj_head_complexity == 3:
-            self.net = nn.Sequential(
-                nn.Linear(in_dim, 512),
-                nn.GELU(),
-                nn.Dropout(0.3),
                 nn.Linear(512, 1024),
                 nn.GELU(),
                 nn.Dropout(0.2),
@@ -50,6 +41,12 @@ class ProjectionHead(nn.Module):
                 nn.GELU(),
                 nn.Dropout(0.1),
                 nn.Linear(512, cfg.model.embed_dim)
+            )
+        elif cfg.model.proj_head_complexity == 3:
+            self.net = nn.Sequential(
+                ResidualGatedAttention(in_dim, num_heads = 4),
+                nn.Dropout(0.3),
+                nn.Linear(in_dim, cfg.model.embed_dim),
             )
         else:
             raise ValueError(f"Invalid projection head complexity: {cfg.model.proj_head_complexity}")
@@ -66,7 +63,7 @@ class DualEncoder(nn.Module):
         self.cfg = cfg
 
         if cfg.model.name.startswith("dinov3"):
-            if cfg.model.share_backbone: # if backbone is completely frozen, share weights to save memory
+            if cfg.model.share_backbone and not cfg.model.freeze_backbone: # if backbone is completely frozen, share weights to save memory
                 logger.info("Frozen backbone, hence sharing weights for schema and seal encoders.")
                 self.seal_encoder = AutoModel.from_pretrained(cfg.model.model_version)
                 self.schema_encoder = self.seal_encoder
@@ -76,7 +73,7 @@ class DualEncoder(nn.Module):
                 self.seal_encoder = AutoModel.from_pretrained(cfg.model.model_version)
 
         elif cfg.model.name == "resnet18":
-            if cfg.model.share_backbone:
+            if cfg.model.share_backbone and not cfg.model.freeze_backbone: # if backbone is completely frozen, share weights to save memory
                 logger.info("Frozen backbone, hence sharing weights for schema and seal encoders.")
                 self.seal_encoder = models.resnet18(weights="IMAGENET1K_V1")
                 self.schema_encoder = self.seal_encoder
@@ -85,7 +82,7 @@ class DualEncoder(nn.Module):
                 self.seal_encoder = models.resnet18(weights="IMAGENET1K_V1")
 
         elif cfg.model.name == "resnet50":
-            if cfg.model.share_backbone:
+            if cfg.model.share_backbone and not cfg.model.freeze_backbone: # if backbone is completely frozen, share weights to save memory
                 logger.info("Frozen backbone, hence sharing weights for schema and seal encoders.")
                 self.seal_encoder = models.resnet50(weights="IMAGENET1K_V1")
                 self.schema_encoder = self.seal_encoder
@@ -94,7 +91,7 @@ class DualEncoder(nn.Module):
                 self.seal_encoder = models.resnet50(weights="IMAGENET1K_V1")
 
         elif cfg.model.name == "efficientnet_b0":
-            if cfg.model.share_backbone:
+            if cfg.model.share_backbone and not cfg.model.freeze_backbone: # if backbone is completely frozen, share weights to save memory
                 logger.info("Frozen backbone, hence sharing weights for schema and seal encoders.")
                 self.seal_encoder = models.efficientnet_b0(weights="IMAGENET1K_V1")
                 self.schema_encoder = self.seal_encoder
@@ -137,6 +134,36 @@ class DualEncoder(nn.Module):
         self.schema_proj = ProjectionHead(self.feature_dim, cfg)
         self.seal_proj = ProjectionHead(self.feature_dim, cfg)
 
+
+    def forward(self, schema, seal):
+        # Extract features
+        z_schema = self.encode_schema(schema)
+        z_seal = self.encode_seal(seal)
+        return z_schema, z_seal
+
+    def encode_schema(self, schema):
+        z = self._encode_backbone(schema, self.schema_encoder)
+        z = self.schema_proj(z) # project to common embedding space
+        z = F.normalize(z, dim=1) # L2 normalize for cosine similarity
+        return z
+    
+    def encode_seal(self, seal):
+        z = self._encode_backbone(seal, self.seal_encoder)
+        z = self.seal_proj(z) # project to common embedding space
+        z = F.normalize(z, dim=1) # L2 normalize for cosine similarity
+        return z
+
+
+    def extract_tokens(self, x, encoder):
+        assert self.cfg.model.name.startswith("dinov3"), "extract_tokens is only implemented for dinov3"
+        out = encoder(x)
+        h = out.last_hidden_state            # [B, 1+T, D]
+        cls_token = h[:, 0, :]
+        cls_token = F.normalize(cls_token, dim=-1)  # L2 normalize
+        patch_tokens = h[:, 1:, :]
+        patch_tokens = F.normalize(patch_tokens, dim=-1)  # L2 normalize
+        return {"CLS_token": cls_token, "patch_tokens": patch_tokens}
+    
     
     def _encode_backbone(self, x, encoder):
         if self.cfg.model.name.startswith("dinov3"):
@@ -158,26 +185,6 @@ class DualEncoder(nn.Module):
                 raise ValueError(f"Unknown token_pool: {pool_type}")
         else:
             return encoder(x)
-        
-        
-    def encode_schema(self, schema):
-        z = self._encode_backbone(schema, self.schema_encoder)
-        z = self.schema_proj(z) # project to common embedding space
-        z = F.normalize(z, dim=1) # L2 normalize for cosine similarity
-        return z
-    
-    def encode_seal(self, seal):
-        z = self._encode_backbone(seal, self.seal_encoder)
-        z = self.seal_proj(z) # project to common embedding space
-        z = F.normalize(z, dim=1) # L2 normalize for cosine similarity
-        return z
-
-
-    def forward(self, schema, seal):
-        # Extract features
-        z_schema = self.encode_schema(schema)
-        z_seal = self.encode_seal(seal)
-        return z_schema, z_seal
     
     
     def _strip_backbone(self):

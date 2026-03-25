@@ -3,11 +3,12 @@ defaults:
   - data: default
   - train: default
   - loss: clip
+  - test: default
   - _self_
 
 hydra:
   run:
-    dir: outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    dir: outputs/training/${now:%Y-%m-%d}/${now:%H-%M-%S}
   job:
     chdir: true
 
@@ -18,7 +19,10 @@ visualize_after_train: true
 wandb:
   use_wandb_logging: true
   project_name: cross_modal_retrieval_v2
-  name: ${model.name}_ClipLoss_repeat_fold${data.fold}
+  name: ${model.name}_${loss.name}_stndrdSchemas_fold${data.fold}
+  group: backbone_ablation
+  job_type: train
+  tags: [dinov3, linear, clip, grayscale, default_aug, fold0]
 
 
 # wandb:

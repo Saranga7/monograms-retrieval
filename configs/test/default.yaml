@@ -1,1 +1,6 @@
-checkpoint_path: /scratch/mahantas/cross_modal_retrieval/multirun/2026-03-04/12-10-36_dinov3H+_FT_arcfaceloss/1/checkpoints/fold_1/best_model.pth
+checkpoint_path: /scratch/mahantas/cross_modal_retrieval/outputs/2026-03-20/11-09-06_train_fulldataset_100epochs/checkpoints/fold_3/epoch_50.pth
+reranking:
+  enable: false
+  normalize_mode: minmax
+  mode: fused
+  alpha: 0

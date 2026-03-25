@@ -4,7 +4,9 @@ import os
 import numpy as np
 import torch
 import logging
-
+import torch.nn as nn
+import torch.nn.functional as F
+from torch import Tensor
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +30,8 @@ def viz_image_pairs(dataset, name, num_pairs = 5):
     
     for i in range(num_pairs):
         idx = random.randint(0, len(dataset) - 1)
-        schema, seal = dataset[idx]
+        batch = dataset[idx]
+        schema, seal = batch["schema"], batch["seal"]
 
         schema = denormalize(schema)
         seal = denormalize(seal)
@@ -53,6 +56,8 @@ def viz_image_pairs(dataset, name, num_pairs = 5):
     plt.savefig(f"/scratch/mahantas/cross_modal_retrieval/visualizations/{name}.png")
 
 
+
+
 def setup_reproducibility(seed):
     """
     Sets random seeds for reproducibility.
@@ -73,3 +78,98 @@ def setup_reproducibility(seed):
 
     return seed
 
+
+
+class Attention(nn.Module):
+    """
+    Attention mechanism computing attention on a CLS token.
+    It considers the CLS token as a sequence chunks, and performs attention at the chunks level.
+    Each head will be able to attend to different aspects of the feature space, allowing for more complex feature interactions.
+    """
+
+    def __init__(
+        self,
+        dim: int,
+        num_heads: int = 8,
+        qkv_bias: bool = False,
+        proj_bias: bool = True,
+        attn_drop: float = 0.0,
+        proj_drop: float = 0.0,
+    ) -> None:
+        super().__init__()
+        self.num_heads = num_heads
+        self.dim = dim
+        self.head_dim = dim // num_heads
+        self.scale = self.head_dim**-0.5
+
+        self.qkv = nn.Linear(dim, dim * 3, bias=qkv_bias)
+        self.attn_drop = nn.Dropout(attn_drop)
+        self.proj = nn.Linear(dim, dim, bias=proj_bias)
+        self.proj_drop = nn.Dropout(proj_drop)
+
+    def forward(self, x: Tensor) -> Tensor:
+        B, C = x.shape
+
+        # Apply qkv transformation
+        qkv = self.qkv(x)
+
+        # Reshape to separate Q, K, V and split heads
+        qkv = qkv.reshape(B, 3, self.num_heads, self.head_dim).permute(1, 0, 2, 3)
+        q, k, v = qkv[0], qkv[1], qkv[2]
+
+        # Compute attention
+        attn = (q @ k.transpose(-2, -1)) * self.scale
+        attn = attn.softmax(dim=-1)
+        attn = self.attn_drop(attn)
+
+        # Apply attention and combine heads
+        x = (attn @ v).transpose(1, 2).reshape(B, C)
+
+        # Final projection
+        x = self.proj(x)
+        x = self.proj_drop(x)
+
+        return x
+
+
+
+class GatedLinearUnit(nn.Module):
+    """
+    Gated Linear Unit (GLU) layer.
+
+    GLUs allow the network to control information flow by learning which information to pass through and which to filter out.
+    They can be seen as a learnable activation function that can adapt to the data.
+    GLUs can help mitigate the vanishing gradient problem by providing a gating mechanism that allows gradients to flow more easily through the network.
+    """
+
+    def __init__(self, input_size, output_size):
+        super(GatedLinearUnit, self).__init__()
+        self.linear = nn.Linear(input_size, output_size * 2)
+
+    def forward(self, x):
+        x = self.linear(x)
+        return F.glu(x, dim=-1)
+    
+
+class ResidualGatedAttention(nn.Module):
+    """
+    Residual Gated Attention (RGA) layer.
+
+    RGA layers combine residual connections with gated linear units and attention mechanisms.
+    - The attention mechanism allows the network to focus on relevant parts of the input.
+    - The GLU provides adaptive gating of information flow.
+    - The residual connection (x + residual) helps with gradient flow in deep networks and allows the network to learn incremental transformations.
+    - Layer normalization helps stabilize the learning process by normalizing the inputs to each layer.
+    """
+
+    def __init__(self, in_features, num_heads=8):
+        super().__init__()
+        self.attention = Attention(dim=in_features, num_heads=num_heads)
+        self.glu = GatedLinearUnit(in_features, in_features)
+        self.layer_norm = nn.LayerNorm(in_features)
+
+    def forward(self, x):
+        residual = x
+        x = self.attention(x)
+        x = self.glu(x)
+        return self.layer_norm(x + residual)

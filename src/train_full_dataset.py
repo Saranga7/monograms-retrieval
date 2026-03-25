@@ -6,8 +6,7 @@ import torch.optim as optim
 import wandb
 from tqdm import tqdm
 import logging
-import time
-from omegaconf import DictConfig, OmegaConf
+import datetime
 
 from src.dataset import MonogramPairDataset
 from src.models import DualEncoder
@@ -22,18 +21,15 @@ logger = logging.getLogger(__name__)
 
 def train(cfg):
     
-    start = time.time()
-
+    start = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    wandb.init(
-            project=cfg.wandb.project_name,
-            name=cfg.wandb.name,
-            group=cfg.wandb.group,
-            job_type=cfg.wandb.job_type,
-            tags=cfg.wandb.tags,
-            config=OmegaConf.to_container(cfg, resolve=True),
-        )
+    if cfg.wandb.use_wandb_logging:
+        wandb.init(
+            project = cfg.wandb.project_name, 
+            name = f"{cfg.model.name}_fulldataset",
+            config = dict(cfg),
+            )
     
     logger.info(f"Using Device: {device}")
     logger.info(f"Fold: {cfg.data.fold}")
@@ -43,8 +39,8 @@ def train(cfg):
     train_dataset = MonogramPairDataset(
         data_dir=cfg.data.data_dir,
         splits_dir=cfg.data.splits_dir,
-        fold = cfg.data.fold,
-        split = "train",
+        fold = None,  # Use all folds for training
+        split = "all",
         transform = cfg.data.transforms.enable,
         return_paths = False,
         use_processed_seals = cfg.train.use_processed_seals,
@@ -54,19 +50,6 @@ def train(cfg):
         }
     )
 
-    test_dataset = MonogramPairDataset(
-        data_dir=cfg.data.data_dir,
-        splits_dir=cfg.data.splits_dir,
-        fold = cfg.data.fold,
-        split = "test",
-        transform = cfg.data.transforms.enable,
-        return_paths = False,
-        use_processed_seals = cfg.train.use_processed_seals,
-        kwargs={
-            "use_strong_augmentation": cfg.data.transforms.use_strong_augmentation,
-            "use_grayscale": cfg.data.transforms.use_grayscale
-        }
-    )
 
     if cfg.data.batch_size == "full":
         batch_size = len(train_dataset)
@@ -83,14 +66,6 @@ def train(cfg):
         pin_memory = True
         )
     
-    test_loader = DataLoader(
-        test_dataset,
-        batch_size = batch_size, 
-        shuffle = False, 
-        num_workers = cfg.data.num_workers,
-        pin_memory = True
-        )
-
 
     # Model
     model = DualEncoder(cfg).to(device)
@@ -112,12 +87,10 @@ def train(cfg):
             return_metrics = False
         ).to(device)
 
-    if cfg.train.use_processed_seals:
         consistency_criterion = EmbeddingConsistencyLoss().to(device)
         lambda_aux = cfg.loss.lambda_aux
         # lambda_proc = cfg.loss.lambda_proc
 
-    best_test_loss = float('inf')
     # Optimizer
     optimizer = optim.AdamW(
         list(model.parameters()) + list(criterion.parameters()),
@@ -125,6 +98,7 @@ def train(cfg):
         weight_decay=cfg.train.weight_decay
     )
 
+    best_train_loss = float('inf')
     pbar = tqdm(range(cfg.train.epochs), desc = f"Training Fold {cfg.data.fold}")
     for epoch in pbar:
         # -------------------------
@@ -173,53 +147,13 @@ def train(cfg):
             train_loss_clip /= len(train_loader)
             # train_loss_clip_proc /= len(train_loader)
 
-        # -------------------------
-        # VALIDATION
-        # -------------------------
-        model.eval()
-        test_loss = 0
-        test_loss_aux = 0
-        test_loss_clip = 0
-        # test_loss_clip_proc = 0
-        with torch.no_grad():
-            for batch in test_loader:
-                
-                if cfg.train.use_processed_seals:
-                    schema, seal, seal_proc = batch["schema"].to(device), batch["seal"].to(device), batch["seal_proc"].to(device)
-                else:
-                    schema, seal = batch["schema"].to(device), batch["seal"].to(device)
-
-                z_schema, z_seal = model(schema, seal)
-                clip_loss, _ = criterion(z_schema, z_seal)
-                test_loss_clip += clip_loss.item()
-
-                if cfg.train.use_processed_seals:
-                    z_seal_proc = model.encode_seal(seal_proc)
-                    loss_aux = consistency_criterion(z_seal, z_seal_proc)
-                    test_loss_aux += loss_aux.item()
-
-                    loss = clip_loss + lambda_aux * loss_aux
-
-                    # clip_loss_proc, _ = criterion(z_schema, z_seal_proc)
-                    # test_loss_clip_proc += clip_loss_proc.item()
-
-                    # loss = clip_loss + lambda_aux * loss_aux + lambda_proc * clip_loss_proc
-                else:
-                    loss = clip_loss
-
-                test_loss += loss.item()
-        test_loss /= len(test_loader)
         if cfg.train.use_processed_seals:
-            test_loss_aux /= len(test_loader)
-            test_loss_clip /= len(test_loader)
-            # test_loss_clip_proc /= len(test_loader)
 
             logger.info(f"Epoch {epoch}: train_loss={train_loss:.4f} \
-                        (clip={train_loss_clip:.4f}, aux={train_loss_aux:.4f}) \ntest_loss={test_loss:.4f} \
-                        (clip={test_loss_clip:.4f}, aux={test_loss_aux:.4f})")
+                        (clip={train_loss_clip:.4f}, aux={train_loss_aux:.4f})")
        
         else:
-            logger.info(f"Epoch {epoch}: train_loss={train_loss:.4f}, test_loss={test_loss:.4f}")
+            logger.info(f"Epoch {epoch}: train_loss={train_loss:.4f}")
         # -------------------------
         # LOGGING
         # -------------------------
@@ -231,22 +165,17 @@ def train(cfg):
 
             if cfg.train.use_processed_seals:
                 wandb.log({
-                    "train/loss_clip": train_loss_clip,
-                    "train/loss_aux": train_loss_aux,
-                    # "train/loss_clip_proc": train_loss_clip_proc,
+                    "train_loss_clip": train_loss_clip,
+                    "train_loss_aux": train_loss_aux,
+                    # "train_loss_clip_proc": train_loss_clip_proc,
                     "total_train_loss": train_loss,
                     
-                    "test/loss_clip": test_loss_clip,
-                    "test/loss_aux": test_loss_aux,
-                    # "test/loss_clip_proc": test_loss_clip_proc,
-                    "total_test_loss": test_loss
                 })
 
                 
             else:
                 wandb.log({
-                    "train/loss": train_loss, 
-                    "test/loss": test_loss, 
+                    "train_loss": train_loss, 
                 })
 
 
@@ -283,8 +212,8 @@ def train(cfg):
     
 
         # save best model
-        if test_loss < best_test_loss:
-            best_test_loss = test_loss
+        if train_loss < best_train_loss:
+            best_train_loss = train_loss
 
             checkpoint_path = cfg.train.checkpoint_dir
             os.makedirs(checkpoint_path, exist_ok=True)
@@ -297,7 +226,7 @@ def train(cfg):
 
             best_checkpoint_path = os.path.join(save_dir, "best_model.pth")
             torch.save(model.state_dict(), best_checkpoint_path)
-            logger.info(f"Best model saved at epoch {epoch} with test_loss={best_test_loss:.4f}")
+            logger.info(f"Best model saved at epoch {epoch} with train_loss={best_train_loss:.4f}")
 
     logger.info("Training complete.\n\n-----------------------------\n")
     # Testing retrieval performance of the best model
@@ -310,9 +239,9 @@ def train(cfg):
     model.load_state_dict(state_dict)
 
 
-    logger.info("Evaluating best model on test set...")
+    logger.info("Evaluating best model on full dataset...")
     metrics_test = evaluate_retrieval_accuracy(model, 
-                                               test_loader, 
+                                               train_loader, 
                                                device,
                                                top_k = None,
                                                rerank_mode = None) 
@@ -326,21 +255,20 @@ def train(cfg):
         logger.info(f"Baseline {k}: {v:.4f}") 
 
     if cfg.wandb.use_wandb_logging:
-        prefix = "baseline/" if not cfg.test.reranking.enable else ""
         wandb.log({
-            f"{prefix}R@1_se2sc": metrics_test["seal2schema"]["R@1"],
-            f"{prefix}R@5_se2sc": metrics_test["seal2schema"]["R@5"],
-            f"{prefix}R@10_se2sc": metrics_test["seal2schema"]["R@10"],
-            f"{prefix}MRR_se2sc": metrics_test["seal2schema"]["MRR"],
-            f"{prefix}MedianRank_se2sc": metrics_test["seal2schema"]["MedianRank"],
+            "baseline/R@1_se2sc": metrics_test["seal2schema"]["R@1"],
+            "baseline/R@5_se2sc": metrics_test["seal2schema"]["R@5"],
+            "baseline/R@10_se2sc": metrics_test["seal2schema"]["R@10"],
+            "baseline/MRR_se2sc": metrics_test["seal2schema"]["MRR"],
+            "baseline/MedianRank_se2sc": metrics_test["seal2schema"]["MedianRank"],
         })
 
         wandb.log({
-            f"{prefix}R@1_sc2se": metrics_test["schema2seal"]["R@1"],
-            f"{prefix}R@5_sc2se": metrics_test["schema2seal"]["R@5"],
-            f"{prefix}R@10_sc2se": metrics_test["schema2seal"]["R@10"],
-            f"{prefix}MRR_sc2se": metrics_test["schema2seal"]["MRR"],
-            f"{prefix}MedianRank_sc2se": metrics_test["schema2seal"]["MedianRank"],
+            "baseline/R@1_sc2se": metrics_test["schema2seal"]["R@1"],
+            "baseline/R@5_sc2se": metrics_test["schema2seal"]["R@5"],
+            "baseline/R@10_sc2se": metrics_test["schema2seal"]["R@10"],
+            "baseline/MRR_sc2se": metrics_test["schema2seal"]["MRR"],
+            "baseline/MedianRank_sc2se": metrics_test["schema2seal"]["MedianRank"],
         })
 
     if cfg.test.reranking.enable:
@@ -385,14 +313,13 @@ def train(cfg):
         logger.info("Generating embedding visualizations...")
         vis_dir = os.path.join(
             cfg.train.checkpoint_dir,
-            f"fold_{cfg.data.fold}",
             "visualizations"
         )
 
         visualize(
             cfg,
             checkpoint_path=best_checkpoint_path,
-            split="test",
+            split="all",
             output_dir=vis_dir
         )
 
@@ -409,8 +336,9 @@ def train(cfg):
         wandb.finish()
     
     # Finishing
-    end = time.time()
-    total_seconds = end - start
+    end = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    total_time = datetime.datetime.strptime(end, "%Y-%m-%d_%H-%M-%S") - datetime.datetime.strptime(start, "%Y-%m-%d_%H-%M-%S")
+    total_seconds = total_time.total_seconds()
     hours = total_seconds // 3600
     minutes = (total_seconds % 3600) // 60
     seconds = total_seconds % 60    

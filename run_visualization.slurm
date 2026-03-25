@@ -17,14 +17,14 @@ module load python/3.10.14
 module load cuda/12.8
 
 # Activate your virtual environment
-source /scratch/mahantas/cross_modal_retrieval/cmr/bin/activate
+source /scratch/mahantas/cross_modal_retrieval/.venv/bin/activate
 
 # Optional: check Python and torch versions
 python -c "import torch; print('Python:', __import__('sys').version); print('Torch:', torch.__version__); print('CUDA available:', torch.cuda.is_available())"
 
 # Run the visualization script
 # python main.py -m data.fold=0,1,2,3,4
-python main.py data.fold=1
+python main.py 
 
 ## Finish gracefully
 exit 0

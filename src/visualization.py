@@ -31,6 +31,7 @@ def visualize(cfg, checkpoint_path=None, split="test", output_dir=None):
         }
     )
 
+
     batch_size = len(dataset) if cfg.data.batch_size == "full" else cfg.data.batch_size
 
     loader = DataLoader(

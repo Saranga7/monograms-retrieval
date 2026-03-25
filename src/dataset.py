@@ -3,12 +3,9 @@ from PIL import Image
 from torch.utils.data import Dataset
 import torchvision.transforms as T
 import logging
-logging.basicConfig(level=logging.INFO)
-
-# from utils import viz_image_pairs
+# from src.utils import viz_image_pairs
 
 logger = logging.getLogger(__name__)
-
 
 class MonogramPairDataset(Dataset):
     def __init__(
@@ -38,7 +35,7 @@ class MonogramPairDataset(Dataset):
         self.return_paths = return_paths
         self.use_processed_seals = use_processed_seals
 
-        self.schema_dir = os.path.join(data_dir, "schemas")
+        self.schema_dir = os.path.join(data_dir, "schemas_standardized")
         self.seal_dir = os.path.join(data_dir, "seals")
         self.seal_proc_dir = os.path.join(data_dir, "seals_proc_grad")   # change this if using different preprocessing
 
@@ -173,33 +170,36 @@ class MonogramPairDataset(Dataset):
         """
         Returns transforms depending on the mode (train/val/test)
         """
-
         if self.mode == 'train':
-            schema_transform = T.Compose([
+             schema_transform = T.Compose([
                 self.color_transform,
-                T.Resize((224, 224)),
-                T.ToTensor(),
-            ])
-            seal_transform = T.Compose([
-                self.color_transform,
-                T.RandomResizedCrop((224, 224), scale=(0.9, 1.0)),
-                T.RandomRotation(5),
-                T.RandomApply([T.ColorJitter(brightness=0.3, contrast=0.3)], p=0.8),
-                T.RandomApply([T.GaussianBlur(3, sigma=(0.1, 1.5))], p=0.4),
+                T.Resize((256, 256)),
+                # T.RandomResizedCrop((256, 256), scale=(0.95, 1.0)),
                 T.ToTensor(),
                 self.normalize
             ])
+
+             seal_transform = T.Compose([
+                self.color_transform,
+                T.RandomResizedCrop((256, 256), scale=(0.9, 1.0), ratio=(0.95, 1.05)),
+                T.RandomRotation(5),
+                T.RandomApply([T.ColorJitter(brightness=0.3, contrast=0.3)], p=0.5),
+                T.RandomApply([T.GaussianBlur(3, sigma=(0.1, 1.5))], p=0.3),
+                T.ToTensor(),
+                self.normalize
+            ])
+             
         else:   # test / all / inference-time transforms
             schema_transform = T.Compose([
                 self.color_transform,
-                T.Resize((224, 224)),
+                T.Resize((256, 256)),
                 T.ToTensor(),
                 self.normalize
             ])
             seal_transform = T.Compose([
                 self.color_transform,
-                T.Resize((224, 224)),
-                # T.CenterCrop(224),
+                T.Resize((256, 256)),
+                # T.CenterCrop(256),
                 T.ToTensor(),
                 self.normalize
             ])
@@ -214,14 +214,14 @@ class MonogramPairDataset(Dataset):
         if self.mode == "train":
             schema_transform = T.Compose([
                 self.color_transform,
-                T.RandomResizedCrop(224, scale=(0.92, 1.0), ratio=(0.97, 1.03)),
+                T.RandomResizedCrop(256, scale=(0.92, 1.0), ratio=(0.97, 1.03)),
                 T.ToTensor(),
                 self.normalize,
             ])
 
             seal_transform = T.Compose([
                 self.color_transform,
-                T.RandomResizedCrop(224, scale=(0.9, 1.0), ratio=(0.93, 1.07)),
+                T.RandomResizedCrop(256, scale=(0.9, 1.0), ratio=(0.93, 1.07)),
                 T.RandomApply([
                     T.RandomAffine(
                         degrees=4,
@@ -240,15 +240,15 @@ class MonogramPairDataset(Dataset):
         else:
             schema_transform = T.Compose([
                 self.color_transform,
-                T.Resize((224, 224)),
+                T.Resize((256, 256)),
                 T.ToTensor(),
                 self.normalize,
             ])
 
             seal_transform = T.Compose([
                 self.color_transform,
-                T.Resize((224, 224)),
-                # T.CenterCrop(224),
+                T.Resize((256, 256)),
+                # T.CenterCrop(256),
                 T.ToTensor(),
                 self.normalize,
             ])

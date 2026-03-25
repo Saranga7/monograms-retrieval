@@ -4,7 +4,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-from src.train import train
+from src.train import train # change this for folds
 from src.evaluation import evaluate
 from src.utils import setup_reproducibility
 from src.visualization import visualize
