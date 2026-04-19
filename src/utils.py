@@ -7,6 +7,8 @@ import logging
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
+import wandb
+
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +60,7 @@ def viz_image_pairs(dataset, name, num_pairs = 5):
 
 
 
+
 def setup_reproducibility(seed):
     """
     Sets random seeds for reproducibility.
@@ -77,6 +80,41 @@ def setup_reproducibility(seed):
     torch.backends.cudnn.benchmark = False
 
     return seed
+
+
+def _log_metrics_to_wandb(prefix, metrics):
+    wandb.log({
+        f"{prefix}/R@1_se2sc": metrics["seal2schema"]["R@1"],
+        f"{prefix}/R@5_se2sc": metrics["seal2schema"]["R@5"],
+        f"{prefix}/R@10_se2sc": metrics["seal2schema"]["R@10"],
+        f"{prefix}/MRR_se2sc": metrics["seal2schema"]["MRR"],
+        f"{prefix}/MedianRank_se2sc": metrics["seal2schema"]["MedianRank"],
+
+        f"{prefix}/R@1_sc2se": metrics["schema2seal"]["R@1"],
+        f"{prefix}/R@5_sc2se": metrics["schema2seal"]["R@5"],
+        f"{prefix}/R@10_sc2se": metrics["schema2seal"]["R@10"],
+        f"{prefix}/MRR_sc2se": metrics["schema2seal"]["MRR"],
+        f"{prefix}/MedianRank_sc2se": metrics["schema2seal"]["MedianRank"],
+    })
+
+
+def _log_metrics_to_console(title, metrics, topk=None):
+    if topk is None:
+        logger.info(f"{title} Seal -> Schema")
+        for k, v in metrics["seal2schema"].items():
+            logger.info(f"{k}: {v:.4f}")
+
+        logger.info(f"{title} Schema -> Seal")
+        for k, v in metrics["schema2seal"].items():
+            logger.info(f"{k}: {v:.4f}")
+    else:
+        logger.info(f"{title} Seal -> Schema")
+        for k, v in metrics["seal2schema"].items():
+            logger.info(f"Reranked_top{topk} {k}: {v:.4f}")
+
+        logger.info(f"{title} Schema -> Seal")
+        for k, v in metrics["schema2seal"].items():
+            logger.info(f"Reranked_top{topk} {k}: {v:.4f}")
 
 
 

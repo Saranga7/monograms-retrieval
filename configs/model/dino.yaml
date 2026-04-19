@@ -1,11 +1,10 @@
-name: dinov3_H+_FT
+name: dinov3_H+
 model_version: facebook/dinov3-vith16plus-pretrain-lvd1689m
-embed_dim: 256
+embed_dim: 512
 freeze_backbone: true
 unfreeze_last_layer: true
-projection_dim: 256
-proj_head_complexity: 1
 share_backbone: false
+proj_head_complexity: 0
 token_pool: "cls" # or ["patch_mean", "cls", "all_mean", "cls_patch_mean"]
 
 

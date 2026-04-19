@@ -29,9 +29,13 @@ wandb/
 wandb_result_summaries/
 demo_outputs/
 rerankability_analysis/
+archive/
 
 # extras
 visualizations/
 
 # Jupyter
 .ipynb_checkpoints/
+
+# some scripts
+lol.py

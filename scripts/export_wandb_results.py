@@ -6,34 +6,22 @@ from tqdm import tqdm
 # SETTINGS
 # -----------------------------
 ENTITY = "saranga7"
-PROJECT = "cross_modal_retrieval_v2"   # your current project
+PROJECT = "cvr_stratified"   # your current project
 
 OUTPUT_CSV = "wandb_results.csv"
 
 # Put here any metrics you want to export
 METRICS = [
-    # "train_loss",
-    # "test_loss",
-    # "train_R@1_se2sc",
-    # "train_R@5_se2sc",
-    # "train_R@10_se2sc",
-    # "train_MRR_se2sc",
-    # "train_MedianRank_se2sc",
-    # "train_R@1_sc2se",
-    # "train_R@5_sc2se",
-    # "train_R@10_sc2se",
-    # "train_MRR_sc2se",
-    # "train_MedianRank_sc2se",
-    "test_R@1_se2sc",
-    "test_R@5_se2sc",
-    "test_R@10_se2sc",
-    "test_MRR_se2sc",
-    "test_MedianRank_se2sc",
-    "test_R@1_sc2se",
-    "test_R@5_sc2se",
-    "test_R@10_sc2se",
-    "test_MRR_sc2se",
-    "test_MedianRank_sc2se",
+    "test/R@1_se2sc",
+    "test/R@5_se2sc",
+    "test/R@10_se2sc",
+    "test/MRR_se2sc",
+    "test/MedianRank_se2sc",
+    "test/R@1_sc2se",
+    "test/R@5_sc2se",
+    "test/R@10_sc2se",
+    "test/MRR_sc2se",
+    "test/MedianRank_sc2se",
 ]
 
 # Nested config keys you want to export

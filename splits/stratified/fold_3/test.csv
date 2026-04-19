@@ -1,0 +1,71 @@
+monogram_id,labels_saranga,labels_ezechiel,labels_barry,quality_label,Remarks,Remarks2,split
+5__4.4__30,1,M1,M1,1,,,test
+6__3.30__31,1,M1,M2,1,,,test
+9__4.47__62,0,M2,M0,0,Why M2 eze?,,test
+13__5.225__323,1,M1,M1,1,,,test
+22__5.14__571,2,M1,M2,2,,,test
+27__2.6__38,1,M2,M1,1,,,test
+46__8.19__542,3,M1,M3,3,Why M1 eze?,,test
+56__4.40__217,1,M1,M2,1,,,test
+59__5.87__6,1,M1,M1,1,,,test
+60__5.86__639,1,M2,M2,2,,,test
+61__5.96__34,0,M1,M1,0,Quite clear,,test
+67__5.94__94,1,M1,M2,1,,,test
+68__4.12__214,1,M2,M3,1,clash,only contrast problem,test
+72__3.36__775,2,M2,M3,2,,,test
+73__5.99__98,3,M2,M2,3,entire middle structure damaged,an exceptional case to otherwise M2 case,test
+74__5.72__703,1,M2,M2,2,,,test
+78__5.60__83,2,M2,M2,2,,,test
+103__5.79__715,2,M0,M3,2,clash,"why M3 barry, why M0 eze?",test
+107__5.254__435,0,M0,M1,0,,,test
+108__5.82__373,0,M1,M1,0,quite clear,,test
+113__5.85__331,1,M1,M2,1,,,test
+115__2.66__437,1,M2,M2,1,nothing broken,,test
+117__4.36__696,1,M0,M2,1,clash,,test
+128__8.24__796,2,M2,M3,2,,,test
+129__8.25__619,2,M2,M2,2,,,test
+132__5.253__475,0,M1,M2,1,clash,why M2 barry?,test
+133__5.254__435,0,M0,M1,0,,,test
+140__5.248__106,0,M1,M1,0,,,test
+149__4.18__311,2,M2,M2,2,,,test
+150__4.17__185,1,M1,M2,1,,,test
+152__2.47__314,1,M2,M2,1,only partial damage of ligature,,test
+161__3.19__42,1,M2,M2,2,,,test
+162__3.16__440,0,M1,M1,0,quite clear,,test
+163__8.27__800,2,M2,M2,2,,,test
+167__2.11__334,1,M1,M2,1,,,test
+175__5.109-110__721,1,M3,M2,1,clash,poor contrast,test
+181__2.44__59,0,M1,M0,0,,,test
+186__2.31__208,1,M1,M2,1,,,test
+196__5.85__331,1,M0,M2,1,clash,,test
+200__8.21__498,1,M3,M2,1,clash,"why M3, eze?",test
+204__5.155__78,1,M1,M2,1,,,test
+205__5.156__454,1,M1,M2,1,,,test
+206__4.2__366,1,M2,M2,1,not-so-good contrast,,test
+209__3.20__658,3,M2,M2,3,not legible,,test
+211__5.159__318,1,M1,M2,1,,,test
+212__5.160__57,1,M2,M1,1,,,test
+213__5.162__652,1,M2,M1,1,,,test
+220__3.46__330,2,M1,M3,2,clash,,test
+224__5.167__167,1,M2,M1,1,,,test
+226__5.170__523,1,M2,M2,2,,,test
+227__5.169__55,2,M2,M1,2,,,test
+228__5.173__450,2,M1,M2,2,,,test
+230__3.27__252,1,M3,M2,2,clash,,test
+231__2.12__492,1,M2,M1,1,,,test
+248__5.17__260,0,M1,M1,0,"Clearly visible, good contrast",,test
+254__5.32__261,1,M1,M2,1,,,test
+272__5.197__464,2,M1,M2,2,,,test
+281__5.204__646,1,M0,M2,2,clash,,test
+282__5.205__247,1,M1,M2,1,,,test
+289__3.49__114,0,M2,M1,0,clearly visible,,test
+303__5.224__197,2,M2,M2,2,,,test
+311__3.40__288,2,M1,M1,2,,,test
+317__5.257-258__159,0,M2,M1,1,clash,"Why M2, eze?",test
+319__8.26__81,2,M2,M2,2,,,test
+323__8.34__472,2,M1,M2,2,,,test
+325__5.200__113,1,M2,M1,1,,,test
+327__8.35__530,2,M2,M2,2,,,test
+337__7.17__697,2,M1,M3,2,clash,,test
+VI__5.44__16,2,M1,M1,1,,,test
+XII__7.8__201,1,M2,M2,2,,,test

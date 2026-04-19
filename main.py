@@ -13,7 +13,7 @@ import wandb
 wandb.login(key="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")
 
 
-@hydra.main(version_base=None, config_path="configs", config_name="training")
+@hydra.main(version_base=None, config_path="configs", config_name="training_generalization")
 def main(cfg: DictConfig):
 
     logger.info(OmegaConf.to_yaml(cfg))

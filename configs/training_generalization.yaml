@@ -1,0 +1,26 @@
+defaults:
+  - model: dino
+  - data: generalization
+  - train: default
+  - loss: clip
+  - test: default
+  - _self_
+
+hydra:
+  run:
+    dir: outputs/training/${now:%Y-%m-%d}/${now:%H-%M-%S}_generalization_${model.name}_reranked${test.reranking.alpha}
+  job:
+    chdir: true
+
+device: cuda
+seed: 7
+mode: train
+visualize_after_train: true
+wandb:
+  use_wandb_logging: true
+  project_name: CVR_generalization
+  name: ${model.name}_reranked${test.reranking.alpha}
+  group: best_config
+  job_type: train
+  tags: [dinov3, linear, clip, grayscale, default_aug, generalization, reranked, alpha_]
+

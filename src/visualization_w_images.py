@@ -537,6 +537,7 @@ def visualize(cfg, checkpoint_path=None, split="all", output_dir=None):
     dataset = MonogramPairDataset(
         data_dir=cfg.data.data_dir,
         splits_dir=cfg.data.splits_dir if split != "all" else None,
+        split_regime=cfg.data.split_regime,
         fold=cfg.data.fold if split != "all" else None,
         split=split,
         return_paths=True,

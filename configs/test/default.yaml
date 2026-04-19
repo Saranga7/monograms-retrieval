@@ -1,6 +1,6 @@
 checkpoint_path: /scratch/mahantas/cross_modal_retrieval/outputs/2026-03-20/11-09-06_train_fulldataset_100epochs/checkpoints/fold_3/epoch_50.pth
 reranking:
-  enable: false
+  enable: true
   normalize_mode: minmax
   mode: fused
-  alpha: 0
+  alpha: 0.5

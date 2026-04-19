@@ -1,4 +1,3 @@
-import math
 import os
 import torch
 from torch.utils.data import DataLoader
@@ -7,66 +6,221 @@ import wandb
 from tqdm import tqdm
 import logging
 import time
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import OmegaConf
 
 from src.dataset import MonogramPairDataset
 from src.models import DualEncoder
 from src.losses import CLIPLoss, ArcFaceCLIPLoss, EmbeddingConsistencyLoss
-from src.evaluation import evaluate_retrieval_accuracy
+from src.evaluation import evaluate_retrieval_accuracy, evaluate_retrieval_with_fixed_gallery
 from src.visualization import visualize
+from src.utils import _log_metrics_to_wandb, _log_metrics_to_console
 
 
 logger = logging.getLogger(__name__)
+
+
+def _build_dataset(cfg, split_name):
+    return MonogramPairDataset(
+        data_dir=cfg.data.data_dir,
+        splits_dir=cfg.data.splits_dir,
+        split_regime=cfg.data.split_regime,
+        fold=cfg.data.fold,
+        split=split_name,
+        transform=cfg.data.transforms.enable,
+        return_paths=False,
+        use_processed_seals=cfg.train.use_processed_seals,
+        kwargs={
+            "use_strong_augmentation": cfg.data.transforms.use_strong_augmentation,
+            "use_grayscale": cfg.data.transforms.use_grayscale,
+        },
+    )
+
+
+def _build_loader(cfg, dataset, batch_size, shuffle = False):
+    return DataLoader(
+        dataset,
+        batch_size=batch_size,
+        shuffle=shuffle,
+        num_workers=cfg.data.num_workers,
+        pin_memory=torch.cuda.is_available(),
+    )
+
+
+
+def _visualize_split(cfg, split_name, best_checkpoint_path):
+    if not cfg.visualize_after_train:
+        return
+
+    logger.info(f"Generating embedding visualizations for {split_name}...")
+    if cfg.data.split_regime == "stratified":
+        vis_dir = os.path.join(
+            cfg.train.checkpoint_dir,
+            f"fold_{cfg.data.fold}",
+            "visualizations"
+        )
+    else:
+        vis_dir = os.path.join(
+            cfg.train.checkpoint_dir,
+            "visualizations"
+        )
+
+    visualize(
+        cfg,
+        split=split_name,
+        output_dir=vis_dir,
+        checkpoint_path=best_checkpoint_path,
+    )
+
+    if cfg.wandb.use_wandb_logging:
+        try:
+            wandb.log({
+                f"{split_name}_plots/tsne_plot": wandb.Image(os.path.join(vis_dir, "tsne_plot.png")),
+                f"{split_name}_plots/umap_plot": wandb.Image(os.path.join(vis_dir, "umap_plot.png")),
+            })
+        except Exception as e:
+            logger.warning(f"Failed to log visualization images to W&B: {e}")
+
+
+def _evaluate_stratified_regime(cfg, model, device, batch_size, best_checkpoint_path):
+    logger.info("Evaluating best model on stratified test split...")
+
+    test_dataset = _build_dataset(cfg, "test")
+    test_loader = _build_loader(cfg, test_dataset, batch_size)
+
+    metrics = evaluate_retrieval_accuracy(
+        model=model,
+        dataloader=test_loader,
+        device=device,
+        top_k=None,
+        rerank_mode=None,
+    )
+
+    _log_metrics_to_console("[test]", metrics)
+
+    if cfg.wandb.use_wandb_logging:
+        _log_metrics_to_wandb("test", metrics)
+
+    if cfg.test.reranking.enable:
+        for topk in [10, 20, 50]:
+            logger.info(f"Applying patch token-level reranking with top_k={topk} on test...")
+            reranked_metrics = evaluate_retrieval_accuracy(
+                model=model,
+                dataloader=test_loader,
+                device=device,
+                top_k=topk,
+                rerank_mode=cfg.test.reranking.mode,
+                alpha=cfg.test.reranking.alpha,
+                normalize_mode=cfg.test.reranking.normalize_mode,
+            )
+
+            _log_metrics_to_console("[test]", reranked_metrics, topk=topk)
+
+            if cfg.wandb.use_wandb_logging:
+                _log_metrics_to_wandb(f"reranked_top{topk}/test/", reranked_metrics)
+
+    _visualize_split(cfg, "test", best_checkpoint_path)
+
+
+
+def _evaluate_generalization_regime(cfg, model, device, batch_size, best_checkpoint_path):
+    gallery_split = "test_gallery"
+
+    if "strict" in cfg.data.split_regime:
+        query_splits = ["test_medium_q2", "test_hard_q3"]
+    else:
+        query_splits = ["test_easy_q0q1", "test_medium_q2", "test_hard_q3"]
+
+    gallery_dataset = _build_dataset(cfg, gallery_split)
+    gallery_loader = _build_loader(cfg, gallery_dataset, batch_size)
+
+    logger.info("Evaluating overall held-out gallery: test_gallery -> test_gallery")
+    overall_metrics = evaluate_retrieval_with_fixed_gallery(
+        model=model,
+        query_loader=gallery_loader,
+        gallery_loader=gallery_loader,
+        device=device,
+        top_k=None,
+        rerank_mode="none",
+    )
+
+    _log_metrics_to_console("[test_gallery -> test_gallery]", overall_metrics)
+
+    if cfg.wandb.use_wandb_logging:
+        _log_metrics_to_wandb("test_gallery", overall_metrics)
+
+    for eval_split in query_splits:
+        logger.info(f"Evaluating queries from {eval_split} against gallery {gallery_split}")
+
+        query_dataset = _build_dataset(cfg, eval_split)
+        query_loader = _build_loader(cfg, query_dataset, batch_size)
+
+        metrics = evaluate_retrieval_with_fixed_gallery(
+            model=model,
+            query_loader=query_loader,
+            gallery_loader=gallery_loader,
+            device=device,
+            top_k=None,
+            rerank_mode="none",
+        )
+
+        _log_metrics_to_console(f"[{eval_split} -> {gallery_split}]", metrics)
+
+        if cfg.wandb.use_wandb_logging:
+            _log_metrics_to_wandb(f"{eval_split}_vs_{gallery_split}", metrics)
+
+        if cfg.test.reranking.enable:
+            for topk in [10, 20, 50]:
+                logger.info(f"Applying patch token-level reranking with top_k={topk} on {eval_split} vs {gallery_split}...")
+                reranked_metrics = evaluate_retrieval_with_fixed_gallery(
+                    model=model,
+                    query_loader=query_loader,
+                    gallery_loader=gallery_loader,
+                    device=device,
+                    top_k=topk,
+                    rerank_mode=cfg.test.reranking.mode,
+                    alpha=cfg.test.reranking.alpha,
+                    normalize_mode=cfg.test.reranking.normalize_mode,
+                )
+
+                _log_metrics_to_console(f"[{eval_split} -> {gallery_split}]", reranked_metrics, topk=topk)
+
+                if cfg.wandb.use_wandb_logging:
+                    _log_metrics_to_wandb(
+                        f"reranked_top{topk}/{eval_split}_vs_{gallery_split}",
+                        reranked_metrics,
+                    )
+
+        _visualize_split(cfg, eval_split, best_checkpoint_path)
+
+    # optional: also visualize the shared gallery once
+    _visualize_split(cfg, "test_gallery", best_checkpoint_path)
+
+
 
 
 
 def train(cfg):
     
     start = time.time()
-
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    wandb.init(
+    if cfg.wandb.use_wandb_logging:
+        wandb.init(
             project=cfg.wandb.project_name,
             name=cfg.wandb.name,
             group=cfg.wandb.group,
             job_type=cfg.wandb.job_type,
-            tags=cfg.wandb.tags,
+            tags=cfg.wandb.tags + [cfg.data.split_regime],
             config=OmegaConf.to_container(cfg, resolve=True),
-        )
+    )
     
     logger.info(f"Using Device: {device}")
     logger.info(f"Fold: {cfg.data.fold}")
     
-
     # Dataset
-    train_dataset = MonogramPairDataset(
-        data_dir=cfg.data.data_dir,
-        splits_dir=cfg.data.splits_dir,
-        fold = cfg.data.fold,
-        split = "train",
-        transform = cfg.data.transforms.enable,
-        return_paths = False,
-        use_processed_seals = cfg.train.use_processed_seals,
-        kwargs={
-            "use_strong_augmentation": cfg.data.transforms.use_strong_augmentation,
-            "use_grayscale": cfg.data.transforms.use_grayscale
-        }
-    )
+    train_dataset = _build_dataset(cfg, split_name="train")
+    val_dataset = _build_dataset(cfg, split_name="val")
 
-    test_dataset = MonogramPairDataset(
-        data_dir=cfg.data.data_dir,
-        splits_dir=cfg.data.splits_dir,
-        fold = cfg.data.fold,
-        split = "test",
-        transform = cfg.data.transforms.enable,
-        return_paths = False,
-        use_processed_seals = cfg.train.use_processed_seals,
-        kwargs={
-            "use_strong_augmentation": cfg.data.transforms.use_strong_augmentation,
-            "use_grayscale": cfg.data.transforms.use_grayscale
-        }
-    )
 
     if cfg.data.batch_size == "full":
         batch_size = len(train_dataset)
@@ -75,22 +229,9 @@ def train(cfg):
         batch_size = cfg.data.batch_size
 
     # Dataloaders
-    train_loader = DataLoader(
-        train_dataset, 
-        batch_size = batch_size, 
-        shuffle = cfg.data.shuffle, 
-        num_workers = cfg.data.num_workers,
-        pin_memory = True
-        )
-    
-    test_loader = DataLoader(
-        test_dataset,
-        batch_size = batch_size, 
-        shuffle = False, 
-        num_workers = cfg.data.num_workers,
-        pin_memory = True
-        )
-
+    train_loader = _build_loader(cfg, train_dataset, batch_size, shuffle = True)
+    val_loader = _build_loader(cfg, val_dataset, batch_size)
+        
 
     # Model
     model = DualEncoder(cfg).to(device)
@@ -117,7 +258,7 @@ def train(cfg):
         lambda_aux = cfg.loss.lambda_aux
         # lambda_proc = cfg.loss.lambda_proc
 
-    best_test_loss = float('inf')
+    
     # Optimizer
     optimizer = optim.AdamW(
         list(model.parameters()) + list(criterion.parameters()),
@@ -125,6 +266,7 @@ def train(cfg):
         weight_decay=cfg.train.weight_decay
     )
 
+    best_val_loss = float('inf')
     pbar = tqdm(range(cfg.train.epochs), desc = f"Training Fold {cfg.data.fold}")
     for epoch in pbar:
         # -------------------------
@@ -177,12 +319,12 @@ def train(cfg):
         # VALIDATION
         # -------------------------
         model.eval()
-        test_loss = 0
-        test_loss_aux = 0
-        test_loss_clip = 0
-        # test_loss_clip_proc = 0
+        val_loss = 0
+        val_loss_aux = 0
+        val_loss_clip = 0
+        # val_loss_clip_proc = 0
         with torch.no_grad():
-            for batch in test_loader:
+            for batch in val_loader:
                 
                 if cfg.train.use_processed_seals:
                     schema, seal, seal_proc = batch["schema"].to(device), batch["seal"].to(device), batch["seal_proc"].to(device)
@@ -191,35 +333,35 @@ def train(cfg):
 
                 z_schema, z_seal = model(schema, seal)
                 clip_loss, _ = criterion(z_schema, z_seal)
-                test_loss_clip += clip_loss.item()
+                val_loss_clip += clip_loss.item()
 
                 if cfg.train.use_processed_seals:
                     z_seal_proc = model.encode_seal(seal_proc)
                     loss_aux = consistency_criterion(z_seal, z_seal_proc)
-                    test_loss_aux += loss_aux.item()
+                    val_loss_aux += loss_aux.item()
 
                     loss = clip_loss + lambda_aux * loss_aux
 
                     # clip_loss_proc, _ = criterion(z_schema, z_seal_proc)
-                    # test_loss_clip_proc += clip_loss_proc.item()
+                    # val_loss_clip_proc += clip_loss_proc.item()
 
                     # loss = clip_loss + lambda_aux * loss_aux + lambda_proc * clip_loss_proc
                 else:
                     loss = clip_loss
 
-                test_loss += loss.item()
-        test_loss /= len(test_loader)
+                val_loss += loss.item()
+        val_loss /= len(val_loader)
         if cfg.train.use_processed_seals:
-            test_loss_aux /= len(test_loader)
-            test_loss_clip /= len(test_loader)
-            # test_loss_clip_proc /= len(test_loader)
+            val_loss_aux /= len(val_loader)
+            val_loss_clip /= len(val_loader)
+            # val_loss_clip_proc /= len(val_loader)
 
             logger.info(f"Epoch {epoch}: train_loss={train_loss:.4f} \
-                        (clip={train_loss_clip:.4f}, aux={train_loss_aux:.4f}) \ntest_loss={test_loss:.4f} \
-                        (clip={test_loss_clip:.4f}, aux={test_loss_aux:.4f})")
+                        (clip={train_loss_clip:.4f}, aux={train_loss_aux:.4f}) \nval_loss={val_loss:.4f} \
+                        (clip={val_loss_clip:.4f}, aux={val_loss_aux:.4f})")
        
         else:
-            logger.info(f"Epoch {epoch}: train_loss={train_loss:.4f}, test_loss={test_loss:.4f}")
+            logger.info(f"Epoch {epoch}: train_loss={train_loss:.4f}, val_loss={val_loss:.4f}")
         # -------------------------
         # LOGGING
         # -------------------------
@@ -234,19 +376,19 @@ def train(cfg):
                     "train/loss_clip": train_loss_clip,
                     "train/loss_aux": train_loss_aux,
                     # "train/loss_clip_proc": train_loss_clip_proc,
-                    "total_train_loss": train_loss,
+                    "train/total_train_loss": train_loss,
                     
-                    "test/loss_clip": test_loss_clip,
-                    "test/loss_aux": test_loss_aux,
-                    # "test/loss_clip_proc": test_loss_clip_proc,
-                    "total_test_loss": test_loss
+                    "val/loss_clip": val_loss_clip,
+                    "val/loss_aux": val_loss_aux,
+                    # "val/loss_clip_proc": val_loss_clip_proc,
+                    "val/total_val_loss": val_loss
                 })
 
                 
             else:
                 wandb.log({
                     "train/loss": train_loss, 
-                    "test/loss": test_loss, 
+                    "val/loss": val_loss, 
                 })
 
 
@@ -259,10 +401,15 @@ def train(cfg):
             checkpoint_path = cfg.train.checkpoint_dir
             os.makedirs(checkpoint_path, exist_ok=True)
 
-            save_dir = os.path.join(
-                checkpoint_path,
-                f"fold_{cfg.data.fold}"
-            )
+            if cfg.data.split_regime == "stratified":
+                save_dir = os.path.join(
+                    checkpoint_path,
+                    f"fold_{cfg.data.fold}"
+                )
+            else:
+                save_dir = os.path.join(
+                    checkpoint_path,
+                )
 
             os.makedirs(save_dir, exist_ok=True)
 
@@ -283,23 +430,35 @@ def train(cfg):
     
 
         # save best model
-        if test_loss < best_test_loss:
-            best_test_loss = test_loss
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
 
             checkpoint_path = cfg.train.checkpoint_dir
             os.makedirs(checkpoint_path, exist_ok=True)
         
-            save_dir = os.path.join(
-                checkpoint_path,
-                f"fold_{cfg.data.fold}"
-            )
+            if cfg.data.split_regime == "stratified":
+                save_dir = os.path.join(
+                    checkpoint_path,
+                    f"fold_{cfg.data.fold}"
+                )
+            else:
+                save_dir = os.path.join(
+                    checkpoint_path,
+                )
             os.makedirs(save_dir, exist_ok=True)
 
             best_checkpoint_path = os.path.join(save_dir, "best_model.pth")
             torch.save(model.state_dict(), best_checkpoint_path)
-            logger.info(f"Best model saved at epoch {epoch} with test_loss={best_test_loss:.4f}")
+            logger.info(f"Best model saved at epoch {epoch} with val_loss={best_val_loss:.4f}")
 
     logger.info("Training complete.\n\n-----------------------------\n")
+
+    
+
+
+
+
+
     # Testing retrieval performance of the best model
     logger.info("Loading best model for evaluation...")
     del model
@@ -308,103 +467,30 @@ def train(cfg):
     model = DualEncoder(cfg).to(device)
     state_dict = torch.load(best_checkpoint_path, map_location=device)
     model.load_state_dict(state_dict)
+    model.eval()
 
-
-    logger.info("Evaluating best model on test set...")
-    metrics_test = evaluate_retrieval_accuracy(model, 
-                                               test_loader, 
-                                               device,
-                                               top_k = None,
-                                               rerank_mode = None) 
-
-    logger.info("Seal -> Schema")
-    for k, v in metrics_test["seal2schema"].items():
-        logger.info(f"Baseline {k}: {v:.4f}")
-
-    logger.info("Schema -> Seal")
-    for k, v in metrics_test["schema2seal"].items():
-        logger.info(f"Baseline {k}: {v:.4f}") 
-
-    if cfg.wandb.use_wandb_logging:
-        prefix = "baseline/" if not cfg.test.reranking.enable else ""
-        wandb.log({
-            f"{prefix}R@1_se2sc": metrics_test["seal2schema"]["R@1"],
-            f"{prefix}R@5_se2sc": metrics_test["seal2schema"]["R@5"],
-            f"{prefix}R@10_se2sc": metrics_test["seal2schema"]["R@10"],
-            f"{prefix}MRR_se2sc": metrics_test["seal2schema"]["MRR"],
-            f"{prefix}MedianRank_se2sc": metrics_test["seal2schema"]["MedianRank"],
-        })
-
-        wandb.log({
-            f"{prefix}R@1_sc2se": metrics_test["schema2seal"]["R@1"],
-            f"{prefix}R@5_sc2se": metrics_test["schema2seal"]["R@5"],
-            f"{prefix}R@10_sc2se": metrics_test["schema2seal"]["R@10"],
-            f"{prefix}MRR_sc2se": metrics_test["schema2seal"]["MRR"],
-            f"{prefix}MedianRank_sc2se": metrics_test["schema2seal"]["MedianRank"],
-        })
-
-    if cfg.test.reranking.enable:
-        for topk in [10, 20, 50]:
-            logger.info(f"\nApplying patch token-level reranking with top_k={topk}...")
-            reranked_metrics = evaluate_retrieval_accuracy(model, 
-                                                        test_loader, 
-                                                        device, 
-                                                        top_k = topk,
-                                                        rerank_mode = cfg.test.reranking.mode,
-                                                        alpha = cfg.test.reranking.alpha,
-                                                        normalize_mode = cfg.test.reranking.normalize_mode
-                                                        )
-
-            logger.info("Seal -> Schema")
-            for k, v in reranked_metrics["seal2schema"].items():
-                logger.info(f"Reranked_top{topk} {k}: {v:.4f}")
-
-            logger.info("Schema -> Seal")
-            for k, v in reranked_metrics["schema2seal"].items():
-                logger.info(f"Reranked_top{topk} {k}: {v:.4f}")
-
-            if cfg.wandb.use_wandb_logging:
-                wandb.log({
-                    f"reranked_top{topk}/R@1_se2sc": reranked_metrics["seal2schema"]["R@1"],
-                    f"reranked_top{topk}/R@5_se2sc": reranked_metrics["seal2schema"]["R@5"],
-                    f"reranked_top{topk}/R@10_se2sc": reranked_metrics["seal2schema"]["R@10"],
-                    f"reranked_top{topk}/MRR_se2sc": reranked_metrics["seal2schema"]["MRR"],
-                    f"reranked_top{topk}/MedianRank_se2sc": reranked_metrics["seal2schema"]["MedianRank"],
-                })
-
-                wandb.log({
-                    f"reranked_top{topk}/R@1_sc2se": reranked_metrics["schema2seal"]["R@1"],
-                    f"reranked_top{topk}/R@5_sc2se": reranked_metrics["schema2seal"]["R@5"],
-                    f"reranked_top{topk}/R@10_sc2se": reranked_metrics["schema2seal"]["R@10"],
-                    f"reranked_top{topk}/MRR_sc2se": reranked_metrics["schema2seal"]["MRR"],
-                    f"reranked_top{topk}/MedianRank_sc2se": reranked_metrics["schema2seal"]["MedianRank"],
-                })
-
-    # Visualization
-    if cfg.visualize_after_train:
-        logger.info("Generating embedding visualizations...")
-        vis_dir = os.path.join(
-            cfg.train.checkpoint_dir,
-            f"fold_{cfg.data.fold}",
-            "visualizations"
+    
+    if cfg.data.split_regime == "stratified":
+        _evaluate_stratified_regime(
+            cfg=cfg,
+            model=model,
+            device=device,
+            batch_size=batch_size,
+            best_checkpoint_path=best_checkpoint_path,
         )
-
-        visualize(
-            cfg,
-            checkpoint_path=best_checkpoint_path,
-            split="test",
-            output_dir=vis_dir
+    elif cfg.data.split_regime.startswith("generalization"):
+        _evaluate_generalization_regime(
+            cfg=cfg,
+            model=model,
+            device=device,
+            batch_size=batch_size,
+            best_checkpoint_path=best_checkpoint_path,
         )
+    else:
+        raise ValueError(f"Unsupported split_regime: {cfg.data.split_regime}")
 
-        # Optional W&B logging
-        try:
-            wandb.log({
-                "tsne_plot": wandb.Image(os.path.join(vis_dir, "tsne_plot.png")),
-                "umap_plot": wandb.Image(os.path.join(vis_dir, "umap_plot.png")),
-            })
-        except Exception as e:
-            logger.warning(f"Failed to log visualization images to W&B: {e}")
 
+    
     if cfg.wandb.use_wandb_logging:
         wandb.finish()
     

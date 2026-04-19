@@ -15,12 +15,13 @@ from src.dataset import MonogramPairDataset
 from src.models import DualEncoder
 
 
-def visualize(cfg, checkpoint_path=None, split="test", output_dir=None):
+def visualize(cfg, split, output_dir, checkpoint_path = None, ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     dataset = MonogramPairDataset(
         data_dir=cfg.data.data_dir,
         splits_dir=cfg.data.splits_dir if split != "all" else None,
+        split_regime=cfg.data.split_regime,
         fold=cfg.data.fold if split != "all" else None,
         split=split,
         return_paths=True,
@@ -39,7 +40,7 @@ def visualize(cfg, checkpoint_path=None, split="test", output_dir=None):
         batch_size=batch_size,
         shuffle=False,
         num_workers=cfg.data.num_workers,
-        pin_memory=True
+        pin_memory=torch.cuda.is_available()
     )
 
     print(f"Visualization dataset size: {len(dataset)}")
@@ -102,11 +103,8 @@ def visualize(cfg, checkpoint_path=None, split="test", output_dir=None):
     
     all_emb = np.stack(emb["embedding"].values, axis=0)
 
-    # output directory
-    if output_dir is None:
-        output_dir = Path("visualizations") / f"fold_{cfg.data.fold}" / split
-    else:
-        output_dir = Path(output_dir)
+   
+    output_dir = Path(output_dir)
 
     output_dir.mkdir(parents=True, exist_ok=True)
 

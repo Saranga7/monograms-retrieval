@@ -1,0 +1,31 @@
+defaults:
+  - model: dino
+  - data: stratified
+  - train: default
+  - loss: clip
+  - test: default
+  - _self_
+
+hydra:
+  run:
+    dir: outputs/training/${now:%Y-%m-%d}/${now:%H-%M-%S}_stratified_${model.name}_emb${model.embed_dim}_projhead1_arcface
+
+  sweep:
+    dir: multirun/training/${now:%Y-%m-%d}
+    subdir: stratified_${now:%H-%M-%S}_${model.name}_emb${model.embed_dim}_projhead1_arcface
+
+  job:
+    chdir: true
+
+device: cuda
+seed: 7
+mode: train
+visualize_after_train: true
+wandb:
+  use_wandb_logging: true
+  project_name: CVR_stratified
+  name: s5__${model.name}_emb${model.embed_dim}_projhead1_arcface_fold${data.fold}
+  group: embed_dim_ablation
+  job_type: train
+  tags: [dino, projhead1, arcface, grayscale, default_aug, embed_dim_512]
+

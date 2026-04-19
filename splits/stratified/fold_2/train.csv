@@ -1,0 +1,253 @@
+monogram_id,labels_saranga,labels_ezechiel,labels_barry,quality_label,Remarks,Remarks2,split
+238__5.15__325,2,M2,M2,2,,,train
+239__5.181__64,1,M1,M0,1,,,train
+206__4.2__366,1,M2,M2,1,not-so-good contrast,,train
+184__3.13__443,2,M0,M2,2,"Why M0, eze?",,train
+278__8.40__436,0,M2,M0,0,,"why M2, eze?",train
+275__4.39__329,2,M0,M1,2,clash,"very poor contrast, why M0, eze?",train
+198__3.33__320,1,M1,M2,1,,,train
+304__3.6__449,1,M2,M2,2,,,train
+285__2.44__59,1,M2,M2,2,top symbol broken,,train
+83__2.23__327,1,M2,M1,1,,,train
+311__3.40__288,2,M1,M1,2,,,train
+132__5.253__475,0,M1,M2,1,clash,why M2 barry?,train
+279__5.203__463,2,M1,M2,2,,,train
+273__8.17__438,0,M0,M1,0,,,train
+249__4.36__696,1,M0,M2,2,clash,,train
+284__8.41__477,1,M2,M2,2,,,train
+286__5.209__256,2,M1,M2,2,,,train
+339__5.260__637,2,M2,M0,2,,,train
+248__5.17__260,0,M1,M1,0,"Clearly visible, good contrast",,train
+237__5.179__487,2,M1,M2,2,,,train
+276__4.38__434,1,M1,M2,1,,,train
+303__5.224__197,2,M2,M2,2,,,train
+124__5.67-68__183,0,M1,M2,0,clash,quite clear,train
+49__4.1__150,1,M2,M2,1,broken part is not inside,,train
+274__8.39__461,1,M1,M2,1,,,train
+162__3.16__440,0,M1,M1,0,quite clear,,train
+174__2.26__285,1,M2,M2,1,just poor contrast,,train
+332__8.37__631,2,M1,M2,2,,,train
+39__4.23__274,1,M2,M1,1,,,train
+314__2.54__52,2,M2,M2,2,,,train
+325__5.200__113,1,M2,M1,1,,,train
+283__2.32__210,0,M1,M0,0,,,train
+53__5.42__667,2,M2,M2,2,,,train
+324__2.17__209,1,M1,M1,1,,,train
+215__5.163__624,1,M2,M2,2,,,train
+230__3.27__252,1,M3,M2,2,clash,,train
+84__5.173__450,0,M1,M1,0,very clear,,train
+254__5.32__261,1,M1,M2,1,,,train
+40__8.18__584,0,M0,M0,0,,,train
+302__5.221__165,1,M1,M1,1,,,train
+301__5.222__147,2,M1,M2,2,,,train
+231__2.12__492,1,M2,M1,1,,,train
+155__5.171__355,0,M2,M2,1,"why M2 eze, barry?",,train
+204__5.155__78,1,M1,M2,1,,,train
+199__5.55-56__161,1,M2,M2,1,no major damage,,train
+333__2.6__38,2,M1,M2,2,,,train
+305__5.226__707,1,M1,M1,1,,,train
+166__5.141-142__307,1,M1,M2,1,,,train
+98__5.71-72__516,1,M1,M1,1,,,train
+57__5.53__513,3,M2,M3,3,,,train
+159__5.95__332,2,M1,M2,2,,,train
+223__5.168__718,3,M2,M1,3,"totally dispositioned monogram, barely visible",,train
+75__5.59__100,0,M2,M0,0,Why M2 eze?,,train
+77__4.7__124,1,M1,M2,1,,,train
+44__3.12__510,0,M2,M1,0,clash,"very clear, why M2 eze?",train
+22__5.14__571,2,M1,M2,2,,,train
+103__5.79__715,2,M0,M3,2,clash,"why M3 barry, why M0 eze?",train
+337__7.17__697,2,M1,M3,2,clash,,train
+180__5.135__284,1,M1,M1,1,,,train
+VI__5.44__16,2,M1,M1,1,,,train
+I__2.9__315,1,M2,M2,1,no major damage,,train
+227__5.169__55,2,M2,M1,2,,,train
+56__4.40__217,1,M1,M2,1,,,train
+185__2.55__740,1,M2,M2,1,only partial damage,,train
+147__5.234__593,1,M2,M2,1,not-so-good contrast,,train
+255__5.188__692,3,M1,M3,3,,,train
+111__5.83__482,1,M1,M2,1,,,train
+328__5.202__380,2,M2,M1,2,,,train
+90__4.4__30,1,M2,M2,1,"nothing broken, just contrast problem",,train
+102__5.78__169,1,M2,M1,1,,,train
+20__5.17__260,1,M1,M1,1,,,train
+252__5.189__605,1,M1,M2,1,,,train
+277__5.209__256,2,M1,M2,2,,,train
+272__5.197__464,2,M1,M2,2,,,train
+178__5.49__312,1,M1,M2,1,,,train
+V__8.38__245,2,M2,M2,2,,,train
+87__4.6__53,1,M2,M2,1,only contrast problem,,train
+288__4.14__74,1,M2,M2,2,"Right E not complete, bottom O partially broken",,train
+60__5.86__639,1,M2,M2,2,,,train
+XI__7.4__404,1,M3,M1,1,"why M3, eze?",,train
+30__5.28__691,2,M3,M2,2,,,train
+125__2.40__164,1,M1,M1,1,,,train
+179__5.122__202,0,M1,M0,0,,,train
+9__4.47__62,0,M2,M0,0,Why M2 eze?,,train
+194__3.44__446,1,M2,M2,1,"Why M2, eze, barry?",,train
+228__5.173__450,2,M1,M2,2,,,train
+128__8.24__796,2,M2,M3,2,,,train
+232__8.29__289,1,M1,M1,1,,,train
+315__5.228__717,1,M1,M0,1,,,train
+107__5.254__435,0,M0,M1,0,,,train
+61__5.96__34,0,M1,M1,0,Quite clear,,train
+205__5.156__454,1,M1,M2,1,,,train
+307__3.49__114,0,M2,M0,0,,,train
+240__5.180__618,2,M2,M2,2,,,train
+222__8.28__668,3,M2,M3,3,,,train
+224__5.167__167,1,M2,M1,1,,,train
+212__5.160__57,1,M2,M1,1,,,train
+81__5.65__101,0,M2,M0,0,Why M2 eze?,,train
+299__5.220__160,1,M2,M1,1,,,train
+306__3.46__330,2,M2,M2,2,,,train
+100__5.75__215,1,M2,M3,2,clash,,train
+192__5.148__248,1,M1,M2,1,,,train
+82__2.22__322,1,M2,M1,1,,,train
+78__5.60__83,2,M2,M2,2,,,train
+145__4.32__379,0,M0,M1,0,,,train
+96__4.10__162,1,M0,M3,1,clash,why M3 barry?,train
+197__5.152__188,0,M2,M1,1,clash,"confusion, other symbols present",train
+7__2.2__484,3,M2,M3,3,,,train
+225__5.171__355,1,M2,M2,2,,,train
+73__5.99__98,3,M2,M2,3,entire middle structure damaged,an exceptional case to otherwise M2 case,train
+141__2.29__378,0,M2,M2,1,not-so-good contrast,,train
+161__3.19__42,1,M2,M2,2,,,train
+54__5.49__312,1,M1,M2,1,,,train
+121__5.268__518,1,M2,M2,1,still visible despite bottom broken,,train
+293__8.42__249,1,M0,M2,1,clash,,train
+317__5.257-258__159,0,M2,M1,1,clash,"Why M2, eze?",train
+296__5.218__172,2,M2,M2,2,,,train
+165__5.143__225,1,M1,M2,1,,,train
+256__3.22__514,3,M1,M2,3,clash,"Why M1, eze?",train
+5__4.4__30,1,M1,M1,1,,,train
+264__5.193-195__458,0,M0,M1,0,,,train
+271__8.38__245,2,M1,M2,2,,,train
+11__5.47__5,2,M2,M2,2,,,train
+2__3.8__466,1,M1,M1,1,,,train
+113__5.85__331,1,M1,M2,1,,,train
+135__5.245__178,1,M2,M2,1,"why M2 eze, barry?",,train
+308__3.33__320,2,M2,M2,2,,,train
+195__2.27__491,2,M1,M2,2,,,train
+37__5.40__204,1,M1,M2,1,,,train
+235__5.176__61,0,M1,M0,0,,,train
+21__5.15__325,1,M2,M1,1,,,train
+233__5.175__489,1,M1,M2,1,,,train
+67__5.94__94,1,M1,M2,1,,,train
+217__5.264__26,1,M0,M2,1,clash,,train
+115__2.66__437,1,M2,M2,1,nothing broken,,train
+46__8.19__542,3,M1,M3,3,Why M1 eze?,,train
+229__3.21__375,1,M1,M1,1,,,train
+17__5.9__319,2,M2,M1,2,,,train
+176__3.39__126,3,M2,M2,3,not so legible,,train
+171__3.1__277,1,M2,M0,1,clash,,train
+43__3.12__508,1,M2,M1,1,,,train
+97__3.35__368,1,M2,M2,2,,,train
+XII__7.8__201,1,M2,M2,2,,,train
+VII__5.139__9,1,M1,M1,1,,,train
+76__4.26__232,0,M0,M0,0,,,train
+327__8.35__530,2,M2,M2,2,,,train
+190__5.147__40,2,M1,M2,2,,,train
+89__4.20__328,1,M3,M1,1,,,train
+59__5.87__6,1,M1,M1,1,,,train
+86__5.69__22,1,M1,M1,1,,,train
+12__5.45__762,1,M3,M2,2,clash,"perhaps if entire letters are absent, 2 is better",train
+270__5.2__538,1,M1,M2,1,,,train
+157__5.104__738,1,M2,M1,1,,,train
+154__8.44__395,1,M1,M2,1,,,train
+186__2.31__208,1,M1,M2,1,,,train
+209__3.20__658,3,M2,M2,3,not legible,,train
+149__4.18__311,2,M2,M2,2,,,train
+281__5.204__646,1,M0,M2,2,clash,,train
+127__5.102__502,2,M1,M2,2,,,train
+322__3.24__369,1,M1,M2,1,,,train
+226__5.170__523,1,M2,M2,2,,,train
+25__5.20-22__704,1,M1,M1,1,,,train
+120__5.263__127,2,M2,M3,2,,,train
+245__5.188__692,3,M1,M3,3,,,train
+116__5.261__207,2,M2,M2,2,,,train
+70__5.97__163,1,M1,M1,1,,,train
+104__5.80__381,1,M2,M2,1,contrast problem,,train
+330__5.18__470,2,M1,M2,2,,,train
+163__8.27__800,2,M2,M2,2,,,train
+220__3.46__330,2,M1,M3,2,clash,,train
+72__3.36__775,2,M2,M3,2,,,train
+142__5.247__48,0,M2,M1,1,clash,,train
+108__5.82__373,0,M1,M1,0,quite clear,,train
+32__5.30-31__623,1,M2,M2,2,,,train
+146__5.250__433,1,M1,M2,1,,,train
+236__8.30__515,2,M2,M2,2,,,train
+117__4.36__696,1,M0,M2,1,clash,,train
+319__8.26__81,2,M2,M2,2,,,train
+253__5.191__234,0,M0,M0,0,,,train
+85__2.26__285,1,M2,M2,1,"top symbol not broken off, only faded",,train
+19__2.5__712,1,M3,M2,2,Why M3 eze?,"perhaps if entire letters are absent, 2 is better",train
+140__5.248__106,0,M1,M1,0,,,train
+99__5.74__666,1,M2,M2,1,all letters present,,train
+94__5.73__170,1,M2,M2,2,,,train
+131__4.21__310,1,M1,M2,1,,,train
+265__5.192__211,1,M0,M1,1,,,train
+156__5.217__442,1,M1,M2,1,,,train
+58__5.54__392,0,M0,M0,0,,,train
+II__2.11__334,1,M2,M2,1,,,train
+312__5.227__376,0,M1,M1,0,quite clear,,train
+173__5.111__46,0,M2,M0,0,Why M2 eze?,,train
+214__4.3__367,1,M2,M2,1,,,train
+262__2.49__306,2,M2,M2,2,,,train
+313__7.6__499,1,M1,M2,1,,,train
+14__5.6__665,2,M2,M3,2,,,train
+136__5.231__242,2,M2,M3,2,,,train
+289__3.49__114,0,M2,M1,0,clearly visible,,train
+123__5.66__218,2,M1,M3,2,clash,,train
+218__5.165__389,0,M1,M0,0,,,train
+213__5.162__652,1,M2,M1,1,,,train
+6__3.30__31,1,M1,M2,1,,,train
+35__5.36__748,1,M1,M1,1,,,train
+260__2.58__339,1,M1,M2,1,,,train
+250__3.26__20,1,M2,M2,2,,,train
+267__8.32__578,2,M2,M3,2,,,train
+152__2.47__314,1,M2,M2,1,only partial damage of ligature,,train
+326__5.201__149,2,M1,M2,2,,,train
+294__2.58__339,2,M2,M2,2,,,train
+16__5.8__230,0,M1,M1,1,,,train
+150__4.17__185,1,M1,M2,1,,,train
+65__5.95__332,1,M2,M1,1,,,train
+158__5.103__711,2,M3,M2,2,,,train
+290__5.211__432,1,M2,M2,1,,,train
+93__2.25__97,0,M1,M1,0,very clear,,train
+266__2.43__752,2,M2,M2,2,,,train
+193__5.149__219,1,M1,M1,1,,,train
+200__8.21__498,1,M3,M2,1,clash,"why M3, eze?",train
+170__5.106__27,1,M1,M2,1,,,train
+27__2.6__38,1,M2,M1,1,,,train
+297__8.43__520,2,M2,M2,2,,,train
+4__5.2__538,2,M3,M2,2,,,train
+48__4.6__53,1,M2,M1,1,,,train
+68__4.12__214,1,M2,M3,1,clash,only contrast problem,train
+74__5.72__703,1,M2,M2,2,,,train
+183__3.11__286,2,M2,M2,2,,,train
+130__4.20__328,1,M1,M2,1,,,train
+VIII__5.178__190,2,M2,M2,2,,,train
+207__4.30__455,2,M3,M2,2,,,train
+257__5.187__663,1,M2,M2,1,,,train
+280__5.27__37,1,M2,M0,1,clash,,train
+133__5.254__435,0,M0,M1,0,,,train
+148__4.19__326,2,M1,M1,1,acceptable damage,,train
+IV__5.159__318,2,M2,M2,2,,,train
+110__2.41__497,3,M2,M3,3,,,train
+31__5.29__409,3,M2,M3,3,,,train
+153__3.15__186,1,M2,M2,1,"poor contrast, no damage",,train
+15__5.7__56,2,M2,M2,2,,,train
+18__5.12__753,2,M2,M3,2,,,train
+331__8.36__809,3,M2,M2,3,ilegible,,train
+101__5.76-77__335,0,M1,M1,0,very clear,,train
+323__8.34__472,2,M1,M2,2,,,train
+259__2.28__720,1,M1,M2,1,,,train
+119__5.265-266__84,0,M1,M1,0,quite clear,,train
+175__5.109-110__721,1,M3,M2,1,clash,poor contrast,train
+151__2.48__313,1,M1,M2,1,,,train
+105__4.11__63,0,M1,M1,0,very clear,Why M1 barry eze?,train
+292__2.22__322,0,M2,M0,0,,,train
+211__5.159__318,1,M1,M2,1,,,train
+33__5.35__12,2,M1,M2,2,,,train
+316__5.256__701,2,M1,M2,2,,,train
+129__8.25__619,2,M2,M2,2,,,train
+91__5.70__727,2,M1,M2,2,,,train

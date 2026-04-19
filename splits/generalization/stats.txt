@@ -1,0 +1,40 @@
+Quality generalization split with clean test set
+================================================
+
+train (n=224)
+  quality 0:  38 ( 17.0%)
+  quality 1: 111 ( 49.6%)
+  quality 2:  75 ( 33.5%)
+  quality 3:   0 (  0.0%)
+
+val (n=41)
+  quality 0:   5 ( 12.2%)
+  quality 1:  24 ( 58.5%)
+  quality 2:  12 ( 29.3%)
+  quality 3:   0 (  0.0%)
+
+test_gallery (n=85)
+  quality 0:   5 (  5.9%)
+  quality 1:  24 ( 28.2%)
+  quality 2:  38 ( 44.7%)
+  quality 3:  18 ( 21.2%)
+
+test_easy_q0q1 (n=29)
+  quality 0:   5 ( 17.2%)
+  quality 1:  24 ( 82.8%)
+  quality 2:   0 (  0.0%)
+  quality 3:   0 (  0.0%)
+
+test_medium_q2 (n=38)
+  quality 0:   0 (  0.0%)
+  quality 1:   0 (  0.0%)
+  quality 2:  38 (100.0%)
+  quality 3:   0 (  0.0%)
+
+test_hard_q3 (n=18)
+  quality 0:   0 (  0.0%)
+  quality 1:   0 (  0.0%)
+  quality 2:   0 (  0.0%)
+  quality 3:  18 (100.0%)
+
+total unique pairs across listed splits: 350

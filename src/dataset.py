@@ -3,15 +3,36 @@ from PIL import Image
 from torch.utils.data import Dataset
 import torchvision.transforms as T
 import logging
-# from src.utils import viz_image_pairs
+import pandas as pd
+import torchvision.transforms.functional as F
+
 
 logger = logging.getLogger(__name__)
+
+class PadToSquare:
+    def __init__(self, fill=0):
+        self.fill = fill
+
+    def __call__(self, img):
+        w, h = img.size
+        if w == h:
+            return img
+
+        max_side = max(w, h)
+        pad_left = (max_side - w) // 2
+        pad_right = max_side - w - pad_left
+        pad_top = (max_side - h) // 2
+        pad_bottom = max_side - h - pad_top
+
+        return F.pad(img, [pad_left, pad_top, pad_right, pad_bottom], fill=self.fill)
+
 
 class MonogramPairDataset(Dataset):
     def __init__(
         self,
         data_dir,
         splits_dir = None,
+        split_regime = None, #"stratified" or "generalization" or "generalization_strict"
         fold = None,
         split = "train",   # "train", "test", or "all" when no split file is used
         transform = True,
@@ -20,22 +41,38 @@ class MonogramPairDataset(Dataset):
         kwargs = None
     ):
         
+        if kwargs is None:
+            kwargs = {}
+        
         if split == "all":
-            if splits_dir is not None or fold is not None:
-                logger.warning("split='all' ignores splits_dir and fold; loading all matched pairs.")
-        elif split in {"train", "test"}:
-            if (splits_dir is None) != (fold is None):
-                raise ValueError("For split='train' or 'test', both splits_dir and fold must be provided together.")
+            if splits_dir is not None or split_regime is not None or fold is not None:
+                logger.warning("split='all' ignores splits_dir, split_regime, and fold.")
+        elif isinstance(split, str):
+            if splits_dir is None or split_regime is None:
+                raise ValueError("For any named split, both splits_dir and split_regime must be provided.")
+
+            if split_regime == "stratified":
+                if fold is None:
+                    raise ValueError("For split_regime='stratified', fold must be provided.")
+            elif split_regime == "generalization":
+                if fold is not None:
+                    logger.warning("fold is ignored for split_regime='generalization'.")
+            elif split_regime == "generalization_strict":
+                if fold is not None:
+                    logger.warning("fold is ignored for split_regime='generalization_strict'.")
+            else:
+                raise ValueError(f"Unsupported split_regime: {split_regime}")
         else:
-            raise ValueError(f"Unsupported split: {split}. Use 'train', 'test', or 'all'.")
+            raise ValueError(f"Unsupported split: {split}")
         
         self.data_dir = data_dir
-        self.mode = split
+        self.split_name = split
+        self.mode = "train" if split == "train" else "eval"
         self.transform = transform
         self.return_paths = return_paths
         self.use_processed_seals = use_processed_seals
 
-        self.schema_dir = os.path.join(data_dir, "schemas_standardized")
+        self.schema_dir = os.path.join(data_dir, "schemas")
         self.seal_dir = os.path.join(data_dir, "seals")
         self.seal_proc_dir = os.path.join(data_dir, "seals_proc_grad")   # change this if using different preprocessing
 
@@ -92,24 +129,32 @@ class MonogramPairDataset(Dataset):
         # -------------------------------------------------
         allowed_stems = None
 
-        if split != "all" and splits_dir is not None and fold is not None:
-            split_file = os.path.join(
-                splits_dir,
-                f"fold_{fold}",
-                f"{split}.txt"
-            )
+        if split != "all":
+            if split_regime == "stratified":
+                split_file = os.path.join(
+                    splits_dir,
+                    split_regime,
+                    f"fold_{fold}",
+                    f"{split}.csv"
+                )
+            elif split_regime in ["generalization", "generalization_strict"]:
+                split_file = os.path.join(
+                    splits_dir,
+                    split_regime,
+                    f"{split}.csv"
+                )
+            else:
+                raise ValueError(f"Unsupported split_regime: {split_regime}")
 
             if not os.path.exists(split_file):
                 raise FileNotFoundError(f"Split file not found: {split_file}")
 
-            with open(split_file, "r") as f:
-                schema_paths = [line.strip() for line in f.readlines()]
+            split_df = pd.read_csv(split_file)
 
-            # extract stems from schema paths
-            allowed_stems = {
-                os.path.splitext(os.path.basename(p))[0]
-                for p in schema_paths
-            }
+            if "monogram_id" not in split_df.columns:
+                raise ValueError(f"'monogram_id' column not found in {split_file}")
+
+            allowed_stems = set(split_df["monogram_id"].astype(str).str.strip())
 
         # -------------------------------------------------
         # 3️⃣ Match seals to schemas
@@ -140,6 +185,7 @@ class MonogramPairDataset(Dataset):
     def __getitem__(self, idx):
         seal_path = self.seal_paths[idx]
         schema_path = self.schema_paths[idx]
+        pair_id = os.path.splitext(os.path.basename(schema_path))[0]
 
         schema = Image.open(schema_path).convert('RGB')
         seal = Image.open(seal_path).convert('RGB')
@@ -155,12 +201,21 @@ class MonogramPairDataset(Dataset):
             if self.transform:
                 seal_proc = self.schema_T(seal_proc)
         
-            return {"schema" : schema, "seal": seal, "seal_proc" : seal_proc}
+            return {"schema" : schema, 
+                    "seal": seal, 
+                    "seal_proc" : seal_proc,
+                    "pair_id": pair_id}
     
         if self.return_paths:
-            return {"schema" : schema, "seal": seal, "schema_path": schema_path, "seal_path": seal_path}
+            return {"schema" : schema, 
+                    "seal": seal, 
+                    "schema_path": schema_path, 
+                    "seal_path": seal_path,
+                    "pair_id": pair_id}
         
-        return {"schema" : schema, "seal": seal}
+        return {"schema" : schema, 
+                "seal": seal,
+                "pair_id": pair_id}
 
         
             
@@ -171,35 +226,71 @@ class MonogramPairDataset(Dataset):
         Returns transforms depending on the mode (train/val/test)
         """
         if self.mode == 'train':
-             schema_transform = T.Compose([
+        #     schema_transform = T.Compose([
+        #     self.color_transform,
+        #     T.Resize((224, 224)),
+        #     # T.RandomResizedCrop((224, 224), scale=(0.95, 1.0)),
+        #     T.ToTensor(),
+        #     self.normalize
+        # ])
+
+            schema_transform = T.Compose([
                 self.color_transform,
-                T.Resize((256, 256)),
-                # T.RandomResizedCrop((256, 256), scale=(0.95, 1.0)),
+                PadToSquare(fill=0),
+                T.RandomApply([
+                    T.RandomAffine(
+                        degrees=3,
+                        translate=(0.02, 0.02),
+                        scale=(0.98, 1.02),
+                        shear=2,
+                        fill=0
+                    )
+                ], p=0.5),
+                T.Resize((224, 224)),
                 T.ToTensor(),
                 self.normalize
             ])
 
-             seal_transform = T.Compose([
+            #  seal_transform = T.Compose([
+            #     self.color_transform,
+            #     T.RandomResizedCrop((224, 224), scale=(0.9, 1.0), ratio=(0.95, 1.05)),
+            #     T.RandomRotation(5),
+            #     T.RandomApply([T.ColorJitter(brightness=0.3, contrast=0.3)], p=0.5),
+            #     T.RandomApply([T.GaussianBlur(3, sigma=(0.1, 1.5))], p=0.3),
+            #     T.ToTensor(),
+            #     self.normalize
+            # ])
+
+            seal_transform = T.Compose([
                 self.color_transform,
-                T.RandomResizedCrop((256, 256), scale=(0.9, 1.0), ratio=(0.95, 1.05)),
-                T.RandomRotation(5),
+                T.Resize((224, 224)),
+                T.RandomApply([
+                    T.RandomAffine(
+                        degrees=5,
+                        translate=(0.03, 0.03),
+                        scale=(0.95, 1.05),
+                        shear=3,
+                        fill=0
+                    )
+                ], p=0.7),
                 T.RandomApply([T.ColorJitter(brightness=0.3, contrast=0.3)], p=0.5),
                 T.RandomApply([T.GaussianBlur(3, sigma=(0.1, 1.5))], p=0.3),
                 T.ToTensor(),
                 self.normalize
             ])
              
-        else:   # test / all / inference-time transforms
+        else:   # test / val/ all / inference-time transforms
             schema_transform = T.Compose([
                 self.color_transform,
-                T.Resize((256, 256)),
+                PadToSquare(fill=0),
+                T.Resize((224, 224)),
                 T.ToTensor(),
                 self.normalize
             ])
             seal_transform = T.Compose([
                 self.color_transform,
-                T.Resize((256, 256)),
-                # T.CenterCrop(256),
+                T.Resize((224, 224)),
+                # T.CenterCrop(224),
                 T.ToTensor(),
                 self.normalize
             ])
@@ -214,14 +305,14 @@ class MonogramPairDataset(Dataset):
         if self.mode == "train":
             schema_transform = T.Compose([
                 self.color_transform,
-                T.RandomResizedCrop(256, scale=(0.92, 1.0), ratio=(0.97, 1.03)),
+                T.RandomResizedCrop(224, scale=(0.92, 1.0), ratio=(0.97, 1.03)),
                 T.ToTensor(),
                 self.normalize,
             ])
 
             seal_transform = T.Compose([
                 self.color_transform,
-                T.RandomResizedCrop(256, scale=(0.9, 1.0), ratio=(0.93, 1.07)),
+                T.RandomResizedCrop(224, scale=(0.9, 1.0), ratio=(0.93, 1.07)),
                 T.RandomApply([
                     T.RandomAffine(
                         degrees=4,
@@ -240,15 +331,15 @@ class MonogramPairDataset(Dataset):
         else:
             schema_transform = T.Compose([
                 self.color_transform,
-                T.Resize((256, 256)),
+                T.Resize((224, 224)),
                 T.ToTensor(),
                 self.normalize,
             ])
 
             seal_transform = T.Compose([
                 self.color_transform,
-                T.Resize((256, 256)),
-                # T.CenterCrop(256),
+                T.Resize((224, 224)),
+                # T.CenterCrop(224),
                 T.ToTensor(),
                 self.normalize,
             ])
@@ -264,32 +355,26 @@ if __name__ == "__main__":
     # print(f"Schema shape: {schema.shape}, Seal shape: {seal.shape}")
     # viz_image_pairs(dataset, num_pairs = 5)
 
+    from utils import viz_image_pairs
+
     for fold in range(5):
 
         train_dataset = MonogramPairDataset(
             data_dir='/scratch/mahantas/datasets/MonogramSchema_Seal_pairs',
-            splits_dir= '/scratch/mahantas/cross_modal_retrieval/splits',
+            splits_dir= '/scratch/mahantas/cross_modal_retrieval/splits/stratified_5fold',
             fold = fold,
             split = "train",
+            transform = True,
+            return_paths = False,
+            use_processed_seals = False,
             kwargs={
-            "use_strong_augmentation": True
-        }
+                "use_strong_augmentation": False,
+                "use_grayscale": True
+            }
         )
 
         print(f"Train Dataset size: {len(train_dataset)}")
 
-        # viz_image_pairs(train_dataset, name = f"strong_fold_{fold}_train", num_pairs = 5)
+        viz_image_pairs(train_dataset, name = f"padded_fold_{fold}_train", num_pairs = 5)
 
-        test_dataset = MonogramPairDataset(
-            data_dir='/scratch/mahantas/datasets/MonogramSchema_Seal_pairs',
-            splits_dir= '/scratch/mahantas/cross_modal_retrieval/splits',
-            fold = fold,
-            split = "test",
-            kwargs={
-            "use_strong_augmentation": True
-        }
-        )
-
-        print(f"Test Dataset size: {len(test_dataset)}")
-
-        # viz_image_pairs(test_dataset, name = f"strong_fold_{fold}_test", num_pairs = 5)
+      

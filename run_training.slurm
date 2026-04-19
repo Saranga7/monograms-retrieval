@@ -9,7 +9,7 @@
 #SBATCH --partition=gpu              # Partition/queue name (adjust if needed)
 #SBATCH --gres=gpu:1                 # Request 1 GPU
 #SBATCH --cpus-per-task=8            # CPU cores
-#SBATCH --time=00-04:30:00           # Max runtime (DD-HH:MM:SS)
+#SBATCH --time=00-01:33:00           # Max runtime (DD-HH:MM:SS)
 
 # Load modules (adjust to your cluster's Python/CUDA module names)
 module load python/3.10.14
@@ -22,8 +22,9 @@ source /scratch/mahantas/cross_modal_retrieval/.venv/bin/activate
 python -c "import torch; print('Python:', __import__('sys').version); print('Torch:', torch.__version__); print('CUDA available:', torch.cuda.is_available())"
 
 # Run the training script
-python main.py -m data.fold=0,1,2,3,4
+# python main.py -m data.fold=0,1,2,3,4
 # python main.py data.fold=3
+python main.py -m test.reranking.alpha=0.1,0.3,0.7,0.9
 # python main.py 
 
 ## Finish gracefully

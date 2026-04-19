@@ -1,0 +1,6 @@
+name: efficientnet_b0
+embed_dim: 256
+freeze_backbone: true
+unfreeze_last_layer: true
+proj_head_complexity: 0
+share_backbone: false
