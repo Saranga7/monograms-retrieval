@@ -163,6 +163,35 @@ class DualEncoder(nn.Module):
         patch_tokens = h[:, 1:, :]
         patch_tokens = F.normalize(patch_tokens, dim=-1)  # L2 normalize
         return {"CLS_token": cls_token, "patch_tokens": patch_tokens}
+
+    def extract_tokens_for_viz(self, x, encoder):
+        assert self.cfg.model.name.startswith("dinov3"), "extract_tokens is only implemented for dinov3"
+
+        out = encoder(x)
+        h = out.last_hidden_state  # [B, 1 + T, D]
+
+        cls_token = h[:, 0, :]
+
+        patch_size = getattr(encoder.config, "patch_size", 16)
+        img_h, img_w = x.shape[-2:]
+
+        grid_h = img_h // patch_size
+        grid_w = img_w // patch_size
+        n_patches = grid_h * grid_w
+
+        # Some DINOv3 models return extra/register tokens after CLS.
+        # Keep only real image patch tokens.
+        patch_tokens = h[:, 1:1 + n_patches, :]
+
+        cls_token = F.normalize(cls_token, dim=-1)
+        patch_tokens = F.normalize(patch_tokens, dim=-1)
+
+        return {
+            "CLS_token": cls_token,
+            "patch_tokens": patch_tokens,
+            "grid_h": grid_h,
+            "grid_w": grid_w,
+        }
     
     
     def _encode_backbone(self, x, encoder):

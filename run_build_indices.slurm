@@ -16,7 +16,7 @@ module load python/3.10.14
 module load cuda/12.8
 
 # Activate your virtual environment
-source /scratch/mahantas/cross_modal_retrieval/cmr/bin/activate
+source /scratch/mahantas/cross_modal_retrieval/.venv/bin/activate
 
 # Optional: check Python and torch versions
 python -c "import torch; print('Python:', __import__('sys').version); print('Torch:', torch.__version__); print('CUDA available:', torch.cuda.is_available())"
@@ -24,9 +24,9 @@ python -c "import torch; print('Python:', __import__('sys').version); print('Tor
 # Run the training script
 python build_indices_testsets.py \
   --config_path configs \
-  --config_name training \
-  --checkpoint multirun/2026-03-06/15-35-33_dinov3H+_FT_ClipLoss \
-  --output precomputed_indices/dinov3H+_all.pt \
+  --config_name training_stratified \
+  --checkpoint multirun/training/2026-04-16/stratified_23-09-27_dinov3_H+_emb512_bestmodel \
+  --output precomputed_indices/dinov3H+_all_new.pt \
   --split test \
   --batch_size 64 \
   --num_workers 4 \

@@ -33,6 +33,7 @@ archive/
 
 # extras
 visualizations/
+demo_outputs_paper/
 
 # Jupyter
 .ipynb_checkpoints/

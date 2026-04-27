@@ -18,9 +18,9 @@ mode: train
 visualize_after_train: true
 wandb:
   use_wandb_logging: true
-  project_name: CVR_generalization
+  project_name: CVR_generalization_strict
   name: ${model.name}_reranked${test.reranking.alpha}
   group: best_config
   job_type: train
-  tags: [dinov3, linear, clip, grayscale, default_aug, generalization, reranked, alpha_]
+  tags: [dinov3, linear, clip, grayscale, default_aug, generalization, reranked, alpha]
 

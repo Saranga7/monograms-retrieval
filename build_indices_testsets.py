@@ -59,7 +59,8 @@ def build_index(cfg, fold, checkpoint_path, split="all", device="cpu"):
 
     dataset = MonogramPairDataset(
         data_dir=cfg.data.data_dir,
-        splits_dir=cfg.data.splits_dir if split != "all" else None,
+        splits_dir=cfg.data.splits_dir,
+        split_regime=cfg.data.split_regime,
         fold=fold,
         split=split,
         transform = cfg.data.transforms.enable,
@@ -76,7 +77,7 @@ def build_index(cfg, fold, checkpoint_path, split="all", device="cpu"):
         batch_size=cfg.data.batch_size,
         shuffle=False,
         num_workers=cfg.data.num_workers,
-        pin_memory=(device.type == "cuda"),
+        pin_memory=torch.cuda.is_available(),
     )
 
     model = DualEncoder(cfg).to(device)
@@ -155,7 +156,6 @@ def main():
         print(f"{'=' * 60}")
 
         checkpoint_path = os.path.join(args.checkpoint, 
-                                       f"{fold}", 
                                        "checkpoints", 
                                        f"fold_{fold}", 
                                        "best_model.pth") 

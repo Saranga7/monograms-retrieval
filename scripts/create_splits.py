@@ -284,18 +284,6 @@ def make_stratified_kfold_splits(
         print_distribution(test_df, "test")
 
 
-# =========================================================
-# 2) GENERALIZATION SPLIT
-#    Train: 0 + 1 + part of 2
-#    Val:   part of 0 + part of 1 + part of 2
-#    Test queries:
-#       test_easy_q0q1
-#       test_medium_q2
-#       test_hard_q3
-#    Gallery:
-#       test_gallery = union of all test query splits
-# =========================================================
-
 def make_quality_generalization_split(
     df: pd.DataFrame,
     random_state: int = 42,
@@ -307,15 +295,15 @@ def make_quality_generalization_split(
     q2_val_fraction: float = 0.10,
 ) -> None:
     """
-    Generalization protocol with clean test set:
+    Generalization protocol WITHOUT class-3 samples:
 
       q0 -> train / val / test_easy
       q1 -> train / val / test_easy
       q2 -> train / val / test_medium
-      q3 -> test_hard
+      q3 -> excluded entirely
 
     Also creates:
-      test_gallery = test_easy_q0q1 + test_medium_q2 + test_hard_q3
+      test_gallery = test_easy_q0q1 + test_medium_q2
     """
     out_root = OUTPUT_DIR / "generalization"
     out_root.mkdir(parents=True, exist_ok=True)
@@ -323,7 +311,6 @@ def make_quality_generalization_split(
     q0 = df[df[QUALITY_COL] == 0].copy().reset_index(drop=True)
     q1 = df[df[QUALITY_COL] == 1].copy().reset_index(drop=True)
     q2 = df[df[QUALITY_COL] == 2].copy().reset_index(drop=True)
-    q3 = df[df[QUALITY_COL] == 3].copy().reset_index(drop=True)
 
     # -------------------------
     # q0 split
@@ -396,10 +383,9 @@ def make_quality_generalization_split(
 
     test_easy_df = pd.concat([q0_test, q1_test], ignore_index=True)
     test_medium_df = q2_test.reset_index(drop=True)
-    test_hard_df = q3.reset_index(drop=True)
 
     test_gallery_df = pd.concat(
-        [test_easy_df, test_medium_df, test_hard_df],
+        [test_easy_df, test_medium_df],
         ignore_index=True,
     )
 
@@ -431,10 +417,6 @@ def make_quality_generalization_split(
         split_dir / "test_medium_q2.csv", index=False
     )
 
-    test_hard_df.assign(split="test_hard_q3").to_csv(
-        split_dir / "test_hard_q3.csv", index=False
-    )
-
     combined = pd.concat(
         [
             train_df.assign(split="train"),
@@ -442,7 +424,6 @@ def make_quality_generalization_split(
             test_gallery_df.assign(split="test_gallery"),
             test_easy_df.assign(split="test_easy_q0q1"),
             test_medium_df.assign(split="test_medium_q2"),
-            test_hard_df.assign(split="test_hard_q3"),
         ],
         ignore_index=True,
     )
@@ -450,24 +431,24 @@ def make_quality_generalization_split(
 
     write_stats_file(
         split_dir=split_dir,
-        title="Quality generalization split with clean test set",
+        title="Quality generalization split without class-3 images",
         named_dfs={
             "train": train_df,
             "val": val_df,
             "test_gallery": test_gallery_df,
             "test_easy_q0q1": test_easy_df,
             "test_medium_q2": test_medium_df,
-            "test_hard_q3": test_hard_df,
         },
     )
 
-    print("\n=== Generalization split (with clean test) ===")
+    print("\n=== Generalization split (no q3) ===")
     print_distribution(train_df, "train")
     print_distribution(val_df, "val")
     print_distribution(test_gallery_df, "test_gallery")
     print_distribution(test_easy_df, "test_easy_q0q1")
     print_distribution(test_medium_df, "test_medium_q2")
-    print_distribution(test_hard_df, "test_hard_q3")
+
+
 
 
 # =========================================================

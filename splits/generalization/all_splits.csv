@@ -331,24 +331,6 @@ XII__7.8__201,1,M2,M2,2,,,test_gallery
 100__5.75__215,1,M2,M3,2,clash,,test_gallery
 261__8.31__460,2,M1,M2,2,,,test_gallery
 316__5.256__701,2,M1,M2,2,,,test_gallery
-7__2.2__484,3,M2,M3,3,,,test_gallery
-31__5.29__409,3,M2,M3,3,,,test_gallery
-34__5.170__523,3,M2,M3,3,,,test_gallery
-46__8.19__542,3,M1,M3,3,Why M1 eze?,,test_gallery
-57__5.53__513,3,M2,M3,3,,,test_gallery
-73__5.99__98,3,M2,M2,3,entire middle structure damaged,an exceptional case to otherwise M2 case,test_gallery
-110__2.41__497,3,M2,M3,3,,,test_gallery
-138__5.233__795,3,M2,M3,3,,,test_gallery
-176__3.39__126,3,M2,M2,3,not so legible,,test_gallery
-209__3.20__658,3,M2,M2,3,not legible,,test_gallery
-219__3.19__42,2,M3,M3,3,,,test_gallery
-222__8.28__668,3,M2,M3,3,,,test_gallery
-223__5.168__718,3,M2,M1,3,"totally dispositioned monogram, barely visible",,test_gallery
-245__5.188__692,3,M1,M3,3,,,test_gallery
-255__5.188__692,3,M1,M3,3,,,test_gallery
-256__3.22__514,3,M1,M2,3,clash,"Why M1, eze?",test_gallery
-329__5.53__513,3,M2,M2,3,Most of it is broken,,test_gallery
-331__8.36__809,3,M2,M2,3,ilegible,,test_gallery
 61__5.96__34,0,M1,M1,0,Quite clear,,test_easy_q0q1
 133__5.254__435,0,M0,M1,0,,,test_easy_q0q1
 76__4.26__232,0,M0,M0,0,,,test_easy_q0q1
@@ -416,21 +398,3 @@ XII__7.8__201,1,M2,M2,2,,,test_medium_q2
 100__5.75__215,1,M2,M3,2,clash,,test_medium_q2
 261__8.31__460,2,M1,M2,2,,,test_medium_q2
 316__5.256__701,2,M1,M2,2,,,test_medium_q2
-7__2.2__484,3,M2,M3,3,,,test_hard_q3
-31__5.29__409,3,M2,M3,3,,,test_hard_q3
-34__5.170__523,3,M2,M3,3,,,test_hard_q3
-46__8.19__542,3,M1,M3,3,Why M1 eze?,,test_hard_q3
-57__5.53__513,3,M2,M3,3,,,test_hard_q3
-73__5.99__98,3,M2,M2,3,entire middle structure damaged,an exceptional case to otherwise M2 case,test_hard_q3
-110__2.41__497,3,M2,M3,3,,,test_hard_q3
-138__5.233__795,3,M2,M3,3,,,test_hard_q3
-176__3.39__126,3,M2,M2,3,not so legible,,test_hard_q3
-209__3.20__658,3,M2,M2,3,not legible,,test_hard_q3
-219__3.19__42,2,M3,M3,3,,,test_hard_q3
-222__8.28__668,3,M2,M3,3,,,test_hard_q3
-223__5.168__718,3,M2,M1,3,"totally dispositioned monogram, barely visible",,test_hard_q3
-245__5.188__692,3,M1,M3,3,,,test_hard_q3
-255__5.188__692,3,M1,M3,3,,,test_hard_q3
-256__3.22__514,3,M1,M2,3,clash,"Why M1, eze?",test_hard_q3
-329__5.53__513,3,M2,M2,3,Most of it is broken,,test_hard_q3
-331__8.36__809,3,M2,M2,3,ilegible,,test_hard_q3

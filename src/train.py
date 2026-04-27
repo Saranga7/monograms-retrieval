@@ -128,7 +128,7 @@ def _evaluate_generalization_regime(cfg, model, device, batch_size, best_checkpo
     if "strict" in cfg.data.split_regime:
         query_splits = ["test_medium_q2", "test_hard_q3"]
     else:
-        query_splits = ["test_easy_q0q1", "test_medium_q2", "test_hard_q3"]
+        query_splits = ["test_easy_q0q1", "test_medium_q2"]
 
     gallery_dataset = _build_dataset(cfg, gallery_split)
     gallery_loader = _build_loader(cfg, gallery_dataset, batch_size)

@@ -1,5 +1,5 @@
-Quality generalization split with clean test set
-================================================
+Quality generalization split without class-3 images
+===================================================
 
 train (n=224)
   quality 0:  38 ( 17.0%)
@@ -13,11 +13,11 @@ val (n=41)
   quality 2:  12 ( 29.3%)
   quality 3:   0 (  0.0%)
 
-test_gallery (n=85)
-  quality 0:   5 (  5.9%)
-  quality 1:  24 ( 28.2%)
-  quality 2:  38 ( 44.7%)
-  quality 3:  18 ( 21.2%)
+test_gallery (n=67)
+  quality 0:   5 (  7.5%)
+  quality 1:  24 ( 35.8%)
+  quality 2:  38 ( 56.7%)
+  quality 3:   0 (  0.0%)
 
 test_easy_q0q1 (n=29)
   quality 0:   5 ( 17.2%)
@@ -31,10 +31,4 @@ test_medium_q2 (n=38)
   quality 2:  38 (100.0%)
   quality 3:   0 (  0.0%)
 
-test_hard_q3 (n=18)
-  quality 0:   0 (  0.0%)
-  quality 1:   0 (  0.0%)
-  quality 2:   0 (  0.0%)
-  quality 3:  18 (100.0%)
-
-total unique pairs across listed splits: 350
+total unique pairs across listed splits: 332

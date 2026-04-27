@@ -1,6 +1,6 @@
 data_dir: /scratch/mahantas/datasets/MonogramSchema_Seal_pairs
 splits_dir: /scratch/mahantas/cross_modal_retrieval/splits
-split_regime: generalization # "stratified" or "generalization" or "generalization_strict"
+split_regime: generalization_strict # "stratified" or "generalization" or "generalization_strict"
 fold: null
 batch_size: full
 num_workers: 8
